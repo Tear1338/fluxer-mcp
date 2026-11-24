@@ -1,58 +1,29 @@
 {
-  "name": "discord-mcp",
-  "version": "0.0.0",
+  "name": "fluxer-mcp",
+  "version": "1.0.0",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.13"
   },
   "packageManager": "pnpm@9.15.0",
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp"
-    ],
-    "overrides": {
-      "@hono/node-server": "2.1.3",
-      "ws": ">=8.21.0",
-      "undici": "^6.29.1",
-      "express-rate-limit": "^8.6.0",
-      "js-yaml": "^4.3.1",
-      "@grpc/grpc-js": ">=1.14.5"
-    }
+      "esbuild"
+    ]
   },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "test": "turbo run test",
-    "bench": "turbo run bench",
-    "benchmark:real": "node packages/mcp-server/scripts/benchmark/run-real-benchmark.mjs",
-    "benchmark:verify": "node packages/mcp-server/scripts/benchmark/verify-real-benchmark.mjs",
-    "benchmark:small-model": "node packages/mcp-server/scripts/benchmark/small-model-eval.mjs",
-    "benchmark:small-model:verify": "node packages/mcp-server/scripts/benchmark/verify-small-model.mjs",
-    "benchmark:small-model:live": "node packages/mcp-server/scripts/benchmark/small-model-live-run.mjs",
-    "benchmark:small-model:live:verify": "node packages/mcp-server/scripts/benchmark/verify-small-model-live.mjs",
-    "benchmark:activation": "node packages/mcp-server/scripts/benchmark/codex-activation-trial.mjs",
-    "benchmark:activation:claude-code": "node packages/mcp-server/scripts/benchmark/claude-code-activation-trial.mjs",
-    "benchmark:activation:antigravity-cli": "node packages/mcp-server/scripts/benchmark/antigravity-cli-activation-trial.mjs",
-    "benchmark:activation:cursor-cli": "node packages/mcp-server/scripts/benchmark/cursor-cli-activation-trial.mjs",
-    "benchmark:activation:grok-cli": "node packages/mcp-server/scripts/benchmark/grok-cli-activation-trial.mjs",
-    "benchmark:activation:campaign": "node packages/mcp-server/scripts/benchmark/codex-activation-campaign.mjs",
-    "benchmark:activation:claude-code:campaign": "node packages/mcp-server/scripts/benchmark/claude-code-activation-campaign.mjs",
-    "benchmark:activation:antigravity-cli:campaign": "node packages/mcp-server/scripts/benchmark/antigravity-cli-activation-campaign.mjs",
-    "benchmark:activation:cursor-cli:campaign": "node packages/mcp-server/scripts/benchmark/cursor-cli-activation-campaign.mjs",
-    "benchmark:activation:grok-cli:campaign": "node packages/mcp-server/scripts/benchmark/grok-cli-activation-campaign.mjs",
-    "benchmark:activation:matrix": "node packages/mcp-server/scripts/benchmark/production-activation-matrix.mjs",
-    "benchmark:activation:matrix:verify": "node packages/mcp-server/scripts/benchmark/verify-activation-matrix.mjs",
-    "benchmark:architect": "pnpm --filter @discord-mcp/core exec vitest bench src/tools/guild/_lib/blueprint-planning.bench.ts --run",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "catalog:check": "node packages/mcp-server/dist/cli.js catalog --check --json"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
-    "publint": "^0.3.25",
     "turbo": "^2.11.10",
     "typescript": "^5.6.0"
   }

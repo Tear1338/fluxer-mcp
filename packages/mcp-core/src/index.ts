@@ -1,245 +1,153 @@
-import packageJson from '../package.json' with { type: 'json' };
-
 export {
-  type BotChannelSnapshot,
-  type BotMemberSnapshot,
-  type BotPermissionEvaluation,
-  type BotRoleSnapshot,
-  evaluateBotPermissions,
-} from './access/evaluator.js';
-export {
-  type DiscordIntent,
-  type DiscordIntentPlan,
-  type IntentPlanRequest,
-  type IntentPlanStep,
-  planDiscordIntent,
-} from './access/intent-plan.js';
-export {
-  type AccessCondition,
-  type AccessScope,
-  type AccessVerification,
-  type AuthKind,
-  auditToolAccessCoverage,
-  BLUEPRINT_GUILD_ACCESS,
-  BOT_APPLICATION_ACCESS,
-  BOT_APPLICATION_READ_ACCESS,
-  CHANNEL_READ_ACCESS,
-  CHANNEL_WRITE_ACCESS,
-  DISCORD_PERMISSION_BITS,
-  DISCORD_PERMISSION_NAMES,
-  type DiscordAccessRequirement,
-  type DiscordPermissionName,
-  EXTERNAL_ACCESS,
-  GATEWAY_INTENT_NAMES,
-  type GatewayIntentName,
-  GUILD_READ_ACCESS,
-  getToolAccessRequirement,
-  LOCAL_ACCESS,
-  listKnownToolAccessRequirements,
-  OPAQUE_TOKEN_ACCESS,
-  PUBLIC_GUILD_ACCESS,
-  resolveToolAccessRequirement,
-  type ToolAccessCoverageEntry,
-  type ToolAccessRequirement,
-  USER_SCOPED_ACCESS,
-} from './access/requirements.js';
-export {
-  createRuntimeAccessResolver,
-  type RuntimeAccessResolverHandle,
-  type RuntimeAccessResolverOptions,
-} from './access/resolver.js';
-export {
-  type AccessEvidenceStatus,
-  type AccessMode,
-  evaluateRuntimeAccess,
-  type HierarchyEvidenceStatus,
-  type RuntimeAccessDecision,
-  type RuntimeAccessEvidence,
-  type RuntimeAccessRequest,
-  type RuntimeAccessResolver,
-  runtimeAccessRequirement,
-  runtimeAccessRequirementForArgs,
-} from './access/runtime.js';
-// AsyncLocalStorage
-export { getCtx, runWithCtx, type ToolRequestContext, tryGetCtx } from './als/context.js';
-// Audit (Plan 8 Phase E)
-export { redactArgs } from './audit/redact.js';
-export type { AuditEvent } from './audit/schema.js';
-export {
-  type AuditLogEmitter,
+  type AuditEvent,
   type AuditSink,
-  createAuditSink,
   DEFAULT_AUDIT_FILE,
   FileAuditSink,
   NoopAuditSink,
-  OtlpAuditSink,
   StderrAuditSink,
-} from './audit/sink.js';
-// Capabilities
-export { CapabilityRouter } from './capabilities/router.js';
-export type { CapabilityFlag, ClientCapabilitiesSnapshot } from './capabilities/types.js';
-export { type Config, loadConfig } from './config.js';
-export { type FormatErrorContext, formatErrorForUser } from './errors/format.js';
-// Errors
+  createAuditSink,
+  redactArgs,
+  redactRoute,
+} from './audit.js';
 export {
-  BotScopeUnresolvedError,
+  type Config,
+  ConfigSchema,
+  loadConfig,
+  parseCategoryAllowlist,
+  parseGuildAllowlist,
+  resolveWebappUrl,
+  stripAuthPrefix,
+} from './config.js';
+export {
+  PROGRESSIVE_ARCHITECT_TOOL_NAME,
+  PROGRESSIVE_DESTRUCTIVE_TOOL_NAME,
+  PROGRESSIVE_READ_TOOL_NAME,
+  PROGRESSIVE_SEARCH_TOOL_NAME,
+  PROGRESSIVE_WRITE_TOOL_NAME,
+  type ToolSearchResult,
+  buildProgressiveMetaTools,
+  classifyToolRisk,
+  searchTools,
+} from './discovery.js';
+export {
   BulkheadFullError,
-  CancelledError,
   CircuitOpenError,
-  DiscordAuthError,
-  DiscordClientError,
-  DiscordCloudflareBlocked,
-  DiscordError,
-  DiscordNotFoundError,
-  DiscordPermissionError,
-  DiscordRateLimitError,
-  DiscordServerError,
-  DiscordServerErrorImpl,
-  DmConsentRejected,
   DmConsentRequired,
-  DmOutcomeUnknown,
   DryRunPreview,
+  ExternalServiceError,
+  FluxerAuthError,
+  FluxerMcpError,
+  FluxerNotFoundError,
+  FluxerPermissionError,
+  type FormatErrorContext,
   GuildNotAllowedError,
   GuildScopeUnresolvedError,
-  InternalError,
-  PayloadConfirmationApprovalExpired,
-  PayloadConfirmationApprovalMismatch,
-  PayloadConfirmationApprovalMissing,
-  PayloadConfirmationApprovalReplayed,
-  PayloadConfirmationMismatch,
-  PayloadConfirmationRequired,
-  RuntimeAccessDeniedError,
-  RuntimeAccessUnknownError,
   ScopeRejectedError,
   ValidationError,
   type ValidationIssue,
-} from './errors/index.js';
+  WritePreview,
+  formatErrorForUser,
+} from './errors.js';
 export {
-  createGatewayClient,
+  ALL_FLUXER_PERMISSIONS,
+  AUDIT_LOG_ACTION_NAMES,
+  AUDIT_LOG_ACTION_TYPE,
+  CONTENT_WARNING_LEVEL,
+  CRITICAL_EVERYONE_PERMISSIONS,
+  DEFAULT_FLUXER_PERMISSIONS,
+  ELEVATED_FLUXER_PERMISSIONS,
+  FLUXER_CHANNEL_TYPES,
+  FLUXER_CHANNEL_TYPE_NAMES,
+  FLUXER_CHANNEL_TYPE_VALUES,
+  FLUXER_DEFAULT_API_URL,
+  FLUXER_DEFAULT_API_VERSION,
+  FLUXER_DEFAULT_WEBAPP_URL,
+  FLUXER_GUILD_CREATABLE_CHANNEL_TYPES,
+  FLUXER_PERMISSIONS,
+  FLUXER_PERMISSION_NAMES,
+  FLUXER_THREAD_CHANNEL_TYPES,
+  FluxerRoutes,
+  type FluxerChannelType,
+  type FluxerPermissionName,
+  GATEWAY_IDENTIFY_FLAGS,
+  GATEWAY_OPCODES,
+  GUILD_EXPLICIT_CONTENT_FILTER,
+  GUILD_MFA_LEVEL,
+  GUILD_NSFW_LEVEL,
+  GUILD_OPERATIONS,
+  GUILD_SPLASH_CARD_ALIGNMENT,
+  GUILD_VERIFICATION_LEVEL,
+  JOIN_SOURCE_TYPES,
+  MESSAGE_FLAGS,
+  SYSTEM_CHANNEL_FLAGS,
+  THREAD_AUTO_ARCHIVE_DURATIONS,
+} from './fluxer/constants.js';
+export {
+  type GatewayBotInfo,
   type GatewayClient,
-  type GatewayClientDeps,
-} from './gateway/client.js';
-export { SubscriptionRegistry } from './gateway/subscription_registry.js';
+  type GatewayClientOptions,
+  createFluxerGatewayClient,
+} from './fluxer/gateway.js';
 export {
-  type DiscordBotIdentity,
+  type ChannelLike,
+  type EffectivePermissionEvaluation,
+  type OverwriteLike,
+  type PermissionTraceStep,
+  type RoleLike,
+  applyOverwrite,
+  compareRolesDesc,
+  computeBaseGuildPermissions,
+  decodePermissionNames,
+  encodePermissionNames,
+  evaluateChannelPermissions,
+  findDangerousPermissions,
+  getHighestRolePosition,
+  hasPermissionBit,
+  isThreadChannelType,
+  parsePermissionBits,
+} from './fluxer/permissions.js';
+export {
+  type FluxerInstanceDiscovery,
+  type FluxerRequestOptions,
+  FluxerRestClient,
+  type FluxerRestClientOptions,
+  FluxerRetryableError,
+  buildResiliencePolicy,
+  classifyFluxerError,
+  configureCustomCaIfNeeded,
+} from './fluxer/rest.js';
+export { REDACT_PATHS, createLogger } from './logger.js';
+export {
+  ALWAYS_ALLOWED_CATEGORIES,
+  type BotIdentity,
+  type ExecutionPipelineDeps,
+  executeToolWithMiddleware,
   verifyExpectedBotIdentity,
-} from './identity-lock.js';
-export { createLogger } from './logger.js';
-export { auditMiddleware } from './middleware/audit.js';
-// Middleware
+} from './middleware.js';
 export {
-  type CallNext,
-  compose,
-  type MiddlewareContext,
-  type MiddlewareToolInfo,
-  type ToolMiddleware,
-} from './middleware/compose.js';
-export { dmConsentMiddleware } from './middleware/dm-consent.js';
-export {
-  type ComponentsV2Review,
-  FilePayloadApprovalLedger,
-  type PayloadApprovalBinding,
-  PayloadApprovalLedger,
-  type PayloadApprovalLedgerLike,
-  type PayloadConfirmationOptions,
-  payloadConfirmationMiddleware,
-  reviewComponentsV2,
-} from './middleware/payload-confirmation.js';
-export { preconditionMiddleware } from './middleware/precondition.js';
-export {
-  type RuntimeAccessMiddlewareOptions,
-  runtimeAccessMiddleware,
-} from './middleware/runtime-access.js';
-export { telemetryMiddleware } from './middleware/telemetry.js';
-export { validateMiddleware } from './middleware/validate.js';
-export { Precondition } from './pieces/Precondition.js';
-// Pieces
-export {
-  Tool,
-  type ToolAnnotations,
-  type ToolConfirmation,
-  type ToolRunContext,
-} from './pieces/Tool.js';
-// Pipeline
-export {
-  executePipeline,
-  type InvokeFn,
-  type PipelineExecutorCtx,
-  type PipelineResult,
-  type Step,
-  type StepResult,
-} from './pipeline/executor.js';
-export { evalCondition, interpolate, resolvePath } from './pipeline/interpolate.js';
-// Preconditions
-export { CategoryEnabled } from './preconditions/CategoryEnabled.js';
-export { ConfirmRequired } from './preconditions/ConfirmRequired.js';
-// REST resilience (Plan 8 Phase C)
-export { classifyDiscordError, DiscordRetryableError } from './rest/errors.js';
-export { buildPolicy } from './rest/policy.js';
-export {
-  type ClassifierFn,
-  type WrapResilienceOptions,
-  wrapRestWithResilience,
-} from './rest/resilient.js';
-export {
-  type BlueprintLifecycleObservation,
-  type BuildCatalogServerResult,
   type BuildServerDeps,
   type BuildServerResult,
+  VERSION,
   buildCatalogServer,
   buildServer,
 } from './server.js';
-export { PreconditionStore } from './stores/PreconditionStore.js';
-// Stores
-export { ToolStore } from './stores/ToolStore.js';
-// Telemetry (Plan 8 Phase A)
-export * as TelemetryConventions from './telemetry/conventions.js';
-export { redactRoute } from './telemetry/redact.js';
-export { buildResource } from './telemetry/resource.js';
-// Tool helpers
-export { defineTool, type ToolDefinition } from './tools/_lib/defineTool.js';
-export { type CursorPayload, decodeCursor, encodeCursor } from './tools/_lib/pagination.js';
 export {
-  canonicalizePayload,
-  fingerprintPayload,
-} from './tools/_lib/payload-fingerprint.js';
-export { type DualResultOpts, dualResult } from './tools/_lib/response.js';
+  type SignedRecord,
+  canonicalize,
+  deriveSigningSecret,
+  listSignedStateIds,
+  loadSignedState,
+  resolveStateDirectory,
+  saveSignedState,
+  sha256Digest,
+} from './state.js';
 export {
-  ApplicationId,
-  ChannelId,
-  EmojiId,
-  GuildId,
-  MessageId,
-  RoleId,
-  Snowflake,
-  UserId,
-  WebhookId,
-} from './tools/_lib/snowflake.js';
-export {
-  type MessageForWrap,
-  type UntrustedKind,
-  wrapMessages,
-  wrapUntrusted,
-} from './tools/_lib/untrusted.js';
-export {
-  assertGuildBlueprintActivityEvidence,
-  type GuildBlueprintActivityEvidence,
-} from './tools/guild/_lib/blueprint.activity-evidence.js';
-export {
-  type AuthenticatedBlueprintCheckpointOptions,
-  loadAuthenticatedBlueprintCheckpoint,
-} from './tools/guild/_lib/blueprint.checkpoint-store.js';
-
-/**
- * Package version, derived from package.json - the single source of truth.
- *
- * The explicit `: string` annotation is load-bearing: without it the emitted
- * .d.ts bakes a string *literal* type into the about-to-be-frozen public
- * surface, and a consumer writing `if (VERSION !== '1.0.0')` gets TS2367
- * (comparison appears unintentional) instead of a boolean.
- */
-export const VERSION: string = packageJson.version;
-
-export { createEventBridge, eventBridgeFromConfig } from './events/bridge.js';
-export type { EventBridge } from './events/contract.js';
-export { DmEventRuntime, type IncomingDm } from './events/runtime.js';
+  type FluxerCommunityBlueprint,
+  compileFluxerBlueprint,
+} from './tools/blueprint.js';
+export { ALL_FLUXER_TOOLS, FLUXER_TOOL_CATEGORIES } from './tools/index.js';
+export type {
+  FluxerTool,
+  ToolAnnotations,
+  ToolRuntimeContext,
+} from './tools/_lib/types.js';

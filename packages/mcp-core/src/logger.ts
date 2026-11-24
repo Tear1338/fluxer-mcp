@@ -1,37 +1,39 @@
 import pino, { type Logger } from 'pino';
 import type { Config } from './config.js';
-import { redactCredentialUrl } from './telemetry/redact.js';
+
+export const REDACT_PATHS = [
+  'token',
+  'authorization',
+  'Authorization',
+  'FLUXER_TOKEN',
+  'FLUXER_MCP_ACCESS_TOKEN',
+  'MCP_PLAN_SIGNING_SECRET',
+  'password',
+  'secret',
+  'webhook_token',
+  '*.token',
+  '*.authorization',
+  '*.password',
+  '*.secret',
+  '*.webhook_token',
+  'headers.authorization',
+  'headers.Authorization',
+];
 
 /**
- * Error serializer that cannot leak a Discord credential.
- *
- * `@discordjs/rest` throws `DiscordAPIError` / `HTTPError`, which carry the
- * full request `url` and, on `DiscordAPIError`, the `requestBody` that was
- * sent. Webhook and interaction tokens live in the URL *path*, so pino's
- * default `err` serializer writes bearer credentials - and unredacted message
- * content - to stderr at the default log level.
- *
- * Call sites should log a whitelisted projection rather than `{ err }` at all;
- * this exists so that the next time someone does log `{ err }`, it is not a
- * credential disclosure.
+ * Create a structured Pino logger targeting stderr (file descriptor 2).
+ * stdout is strictly reserved for JSON-RPC frames over stdio transport.
  */
-export function serializeErr(err: Error): Record<string, unknown> {
-  const base = pino.stdSerializers.err(err) as unknown as Record<string, unknown>;
-  // The two carriers of request payloads on @discordjs/rest errors.
-  delete base.requestBody;
-  delete base.rawError;
-  delete base.body;
-  for (const key of ['url', 'message', 'stack'] as const) {
-    if (typeof base[key] === 'string') {
-      base[key] = redactCredentialUrl(base[key]);
-    }
-  }
-  return base;
-}
-
-export function createLogger(config: Config): Logger {
+export function createLogger(config: Pick<Config, 'LOG_LEVEL'>): Logger {
   return pino(
-    { level: config.LOG_LEVEL, serializers: { err: serializeErr } },
-    pino.destination(2), // stderr - stdio reserves stdout for JSON-RPC
+    {
+      name: 'fluxer-mcp',
+      level: config.LOG_LEVEL,
+      redact: {
+        paths: REDACT_PATHS,
+        censor: '[REDACTED]',
+      },
+    },
+    pino.destination(2),
   );
 }

@@ -7,55 +7,18 @@
       "inputs": ["src/**", "package.json", "tsconfig.json", "tsdown.config.ts"]
     },
     "test": {
-      // `build` (self), not just `^build` (dependencies): cli.smoke.test.ts
-      // spawns this package's own dist/cli.js as a subprocess. With only
-      // `^build`, a change to the package itself - a version bump, a new CLI
-      // flag - left dist stale and the smoke test asserted against the
-      // previous build. vitest.global-setup.ts only rebuilds when dist is
-      // absent, so it did not catch this either.
       "dependsOn": ["^build", "build"],
       "outputs": ["coverage/**"],
-      "inputs": [
-        "src/**",
-        "scripts/**",
-        "test/**",
-        "test-fixtures/**",
-        "vitest.config.ts",
-        "vitest.global-setup.ts"
-      ]
-    },
-    "bench": {
-      "outputs": [],
-      "inputs": ["src/**", "vitest.config.ts"]
+      "inputs": ["src/**", "test/**", "vitest.config.ts"]
     },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": [],
       "inputs": ["src/**", "tsconfig.json"]
     },
-    "dev": { "cache": false, "persistent": true },
-    "site#build": {
-      "dependsOn": ["@discord-mcp/core#build"],
-      "outputs": ["dist/**", ".astro/**"],
-      "inputs": ["src/**", "scripts/**", "astro.config.ts", "package.json", "tsconfig.json"]
-    },
-    "site#test": {
-      "outputs": [],
-      // The docs drift guards read every site doc page and the mcp-core sources
-      // they compare them
-      // against (the tool registry is loaded from source, not from dist).
-      // With only `scripts/**` in the inputs, editing a doc page or adding a
-      // tool left a cached PASS and the guard never ran - which is exactly
-      // the drift these guards exist to catch.
-      "inputs": [
-        "scripts/**",
-        "vitest.config.ts",
-        "package.json",
-        "src/content/docs/**",
-        "$TURBO_ROOT$/packages/mcp-core/src/tools/**",
-        "$TURBO_ROOT$/packages/mcp-core/src/gateway/handlers/**",
-        "$TURBO_ROOT$/packages/mcp-core/src/telemetry/conventions.ts"
-      ]
+    "dev": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

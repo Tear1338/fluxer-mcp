@@ -1,27 +1,28 @@
 {
-  "name": "@discord-mcp/core",
-  "version": "0.34.1",
+  "name": "@fluxer-mcp/core",
+  "version": "1.0.0",
   "private": false,
   "type": "module",
-  "description": "Typed caller-owned Discord operations for AI agents, with safety controls, resilience, and verifiable guild builds.",
+  "description": "Native Fluxer Model Context Protocol core library with 173 typed tools, Cloud & self-hosted discovery, safety middleware, blueprints, security audits, and backup/restore.",
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "discord",
+    "fluxer",
+    "fluxer-mcp",
     "ai",
     "claude",
+    "codex",
     "cursor"
   ],
   "license": "Apache-2.0",
-  "homepage": "https://cappyeo.github.io/discord-mcp/",
+  "homepage": "https://docs.fluxer.com/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cappyeo/discord-mcp.git",
+    "url": "git+https://github.com/fluxer-mcp/fluxer-mcp.git",
     "directory": "packages/mcp-core"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -39,60 +40,33 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "catalog:build": "node --experimental-sqlite scripts/catalog/build.mjs",
     "dev": "tsdown --watch",
-    "test": "vitest run && node --experimental-sqlite --test scripts/catalog/build.test.mjs",
+    "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "vitest bench --run",
     "typecheck": "tsc --noEmit",
     "prepack": "node -e \"require('node:fs').copyFileSync('../../README.md','README.md');require('node:fs').copyFileSync('../../LICENSE','LICENSE');require('node:fs').copyFileSync('../../NOTICE','NOTICE');\"",
     "postpack": "node -e \"try{require('node:fs').unlinkSync('README.md');require('node:fs').unlinkSync('LICENSE');require('node:fs').unlinkSync('NOTICE');}catch{}\""
   },
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.13"
   },
   "dependencies": {
-    "@opentelemetry/api": "~1.9.0",
-    "@opentelemetry/resources": "^2.12.0",
-    "@opentelemetry/semantic-conventions": "^1.44.0",
-    "cockatiel": "^3.2.1",
-    "discord-api-types": "^0.38.57",
-    "franc-min": "6.2.0",
-    "ipaddr.js": "^2.5.0",
-    "pino": "^9.5.0",
-    "standardwebhooks": "^1.1.1"
-  },
-  "peerDependencies": {
-    "@discordjs/rest": "^2.4.0",
+    "@fluxerjs/rest": "^3.1.0",
+    "@fluxerjs/types": "^3.3.0",
+    "@fluxerjs/ws": "^3.1.0",
     "@modelcontextprotocol/server": "^2.4.0",
-    "@sapphire/pieces": "^4.4.1",
-    "discord.js": "^14.16.3",
+    "cockatiel": "^3.2.1",
+    "pino": "^9.5.0",
+    "undici": "^6.21.0",
     "zod": "^4.0.0"
   },
-  "peerDependenciesMeta": {
-    "discord.js": {
-      "optional": true
-    }
-  },
   "devDependencies": {
-    "@discord-mcp/server-mocks": "workspace:*",
-    "@discordjs/rest": "^2.6.3",
+    "@fluxer-mcp/server-mocks": "workspace:*",
     "@modelcontextprotocol/client": "^2.4.0",
-    "@modelcontextprotocol/ext-apps": "2.0.4",
-    "@modelcontextprotocol/server": "^2.4.0",
-    "@mswjs/interceptors": "^0.45.11",
-    "@opentelemetry/context-async-hooks": "^2.12.0",
-    "@opentelemetry/sdk-metrics": "^2.12.0",
-    "@opentelemetry/sdk-trace-base": "^2.12.0",
-    "@sapphire/pieces": "^4.4.1",
     "@types/node": "^22.20.5",
-    "@vitest/coverage-v8": "4.1.12",
-    "discord.js": "^14.28.1",
-    "esbuild": "^0.28.2",
-    "msw": "^2.15.0",
+    "msw": "^2.12.0",
     "tsdown": "^0.21.10",
     "typescript": "^5.6.0",
-    "vitest": "^4.1.12",
-    "zod": "4.6.7"
+    "vitest": "^4.1.12"
   }
 }

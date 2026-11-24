@@ -1,59 +1,52 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.cappyeo/discord-mcp",
-  "title": "Discord MCP",
-  "description": "Caller-owned Discord operations for AI agents with 222 typed tools and verifiable guild builds.",
+  "name": "io.github.fluxer-mcp/fluxer-mcp",
+  "title": "Fluxer MCP",
+  "description": "Native Model Context Protocol server for Fluxer Cloud & self-hosted communities: 173 typed tools, blueprints, security audits, backups, and moderation.",
+  "version": "1.0.0",
+  "websiteUrl": "https://docs.fluxer.com/",
   "repository": {
-    "url": "https://github.com/cappyeo/discord-mcp",
-    "source": "github",
-    "id": "1223078565",
-    "subfolder": "packages/mcp-server"
+    "url": "https://github.com/fluxer-mcp/fluxer-mcp",
+    "source": "github"
   },
-  "version": "0.34.1",
-  "websiteUrl": "https://cappyeo.github.io/discord-mcp/",
-  "icons": [
-    {
-      "src": "https://raw.githubusercontent.com/cappyeo/discord-mcp/v0.34.1/site/src/assets/discord-mcp-logo-light.png",
-      "mimeType": "image/png",
-      "sizes": ["1024x1024"],
-      "theme": "light"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/cappyeo/discord-mcp/v0.34.1/site/src/assets/discord-mcp-logo-dark.png",
-      "mimeType": "image/png",
-      "sizes": ["1024x1024"],
-      "theme": "dark"
-    }
-  ],
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@discord-mcp/cli",
-      "version": "0.34.1",
+      "identifier": "@fluxer-mcp/cli",
+      "version": "1.0.0",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
-          "description": "Discord bot token. The optional Bot prefix is accepted.",
+          "name": "FLUXER_TOKEN",
+          "description": "Fluxer bot token (with or without 'Bot ' prefix).",
           "isRequired": true,
-          "format": "string",
-          "isSecret": true,
-          "name": "DISCORD_TOKEN"
+          "isSecret": true
         },
         {
-          "description": "Expected Discord bot ID. Startup fails if the token belongs to another bot.",
+          "name": "FLUXER_API_URL",
+          "description": "Optional Fluxer API base URL (defaults to https://api.fluxer.app; set for self-hosted instances).",
           "isRequired": false,
-          "format": "string",
-          "isSecret": false,
-          "name": "DISCORD_EXPECTED_BOT_ID"
+          "isSecret": false
         },
         {
-          "description": "Comma-separated Discord guild IDs this deployment may operate against.",
+          "name": "ALLOWED_GUILDS",
+          "description": "Comma-separated guild IDs the bot is allowed to operate on.",
           "isRequired": false,
-          "format": "string",
-          "isSecret": false,
-          "name": "ALLOWED_GUILDS"
+          "isSecret": false
+        },
+        {
+          "name": "MCP_WRITE_MODE",
+          "description": "Mutation policy: 'allow' or 'preview' (blocks all writes with a preview).",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MCP_DRY_RUN",
+          "description": "Set to 'false' to allow confirmation-gated destructive operations (default: 'true').",
+          "isRequired": false,
+          "isSecret": false
         }
       ]
     }
