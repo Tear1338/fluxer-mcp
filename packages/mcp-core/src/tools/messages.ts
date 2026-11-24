@@ -801,4 +801,118 @@ export const messageTools: readonly FluxerTool[] = [
       });
     },
   }),
+
+  defineTool({
+    name: 'messages_request_attachment_upload',
+    category: 'messages',
+    requiredPermissions: ['VIEW_CHANNEL', 'SEND_MESSAGES', 'ATTACH_FILES'],
+    description:
+      'Fluxer-native: request presigned attachment upload URLs for 1 to 10 files in a channel (`POST /channels/{channel_id}/attachments`). Follow with uploading file bytes and `messages_complete_attachment_upload`.',
+    inputSchema: {
+      channel_id: ChannelId,
+      attachments: z
+        .array(
+          z.object({
+            id: z.number().int().min(0).describe('Client-side integer identifier'),
+            filename: z.string().min(1).max(255).describe('File name to upload'),
+            file_size: z.number().int().min(0).describe('Expected file size in bytes'),
+            content_type: z.string().min(1).max(128).describe('MIME content type'),
+          }),
+        )
+        .min(1)
+        .max(10)
+        .describe('Attachment specifications (1..10)'),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      const res = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.channelAttachments(args.channel_id),
+        { body: { attachments: args.attachments } },
+      );
+      return dualResult({
+        text: `Requested ${args.attachments.length} presigned Fluxer attachment upload URL(s) for channel \`${args.channel_id}\`.`,
+        data: { channel_id: args.channel_id, ...res },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'messages_complete_attachment_upload',
+    category: 'messages',
+    requiredPermissions: ['VIEW_CHANNEL', 'SEND_MESSAGES', 'ATTACH_FILES'],
+    description:
+      'Fluxer-native: finalize 1 to 10 multipart presigned attachment uploads (`POST /channels/{channel_id}/attachments/complete`) after bytes have been uploaded.',
+    inputSchema: {
+      channel_id: ChannelId,
+      uploads: z
+        .array(
+          z.object({
+            upload_filename: z.string().min(1).describe('upload_filename returned by plan step'),
+            upload_id: z.string().min(1).describe('upload_id returned by plan step'),
+          }),
+        )
+        .min(1)
+        .max(10)
+        .describe('Multipart uploads to finalize (1..10)'),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      const res = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.channelAttachmentsComplete(args.channel_id),
+        { body: { uploads: args.uploads } },
+      );
+      return dualResult({
+        text: `Finalized ${args.uploads.length} Fluxer attachment upload(s) for channel \`${args.channel_id}\`.`,
+        data: { channel_id: args.channel_id, ...res },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'messages_preload_channels',
+    category: 'messages',
+    description:
+      'Fluxer-native batch API optimization: preload recent messages across up to 100 channels in a SINGLE API request (`POST /users/@me/preload-messages`). Reduces API calls and rate-limit pressure when auditing multiple channels.',
+    inputSchema: {
+      channel_ids: z
+        .array(ChannelId)
+        .min(1)
+        .max(100)
+        .describe('Channel snowflake IDs to preload (1..100)'),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      const res = await ctx.rest.post<Record<string, unknown[]>>(
+        FluxerRoutes.currentUserPreloadMessages(),
+        { body: { channels: args.channel_ids } },
+      );
+      const totalMessages = Object.values(res).reduce(
+        (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
+        0,
+      );
+      return dualResult({
+        text: `Preloaded ${totalMessages} message(s) across ${args.channel_ids.length} Fluxer channel(s) in 1 API call.`,
+        data: {
+          channel_count: args.channel_ids.length,
+          total_messages: totalMessages,
+          messages_by_channel: res,
+        },
+      });
+    },
+  }),
 ];

@@ -34,4 +34,4 @@ Run:
 ```bash
 fluxer-mcp catalog --check --json
 ```
-This validates all 172 tool contracts locally with zero network calls.
+This validates all 184 tool contracts locally with zero network calls.

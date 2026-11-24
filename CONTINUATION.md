@@ -11,7 +11,7 @@ Fluxer MCP `v1.0.0` is complete, built, linted, typechecked, and tested. Use thi
   - `src/fluxer/permissions.ts`: Exact Fluxer effective permission evaluator & trace engine.
   - `src/middleware.ts`: Category allowlist, strict Zod validation, default guild, `ALLOWED_GUILDS` (with channel-to-guild verification), `MCP_WRITE_MODE=preview`, `MCP_DM_CONSENT_MODE=require`, `MCP_DRY_RUN` + `__confirm: true`, and redacted audit sink.
   - `src/state.ts`: SHA-256 + HMAC-signed local state storage for blueprints, change plans, backups, raid-shield snapshots, and durable workflows.
-  - `src/tools/`: 172 typed tools across 20 categories + `src/server.ts` (full & progressive surfaces, resources, prompts, credential-free catalog server).
+  - `src/tools/`: 184 typed tools across 20 categories + `src/server.ts` (full & progressive surfaces, resources incl. `fluxer://instance/gateway`, prompts, credential-free catalog server).
 - `packages/mcp-server` (`@fluxer-mcp/cli`):
   - `src/cli.ts`: `fluxer-mcp` CLI (`serve`, `catalog`, `doctor`, `smoke`, `setup`, `init`, `profile`).
   - `src/transports/stdio.ts` & `src/transports/http.ts`: Stdio and Bearer-authenticated Streamable HTTP transports.
@@ -33,5 +33,4 @@ pnpm catalog:check
 
 - Server-side AutoMod rules (if Fluxer introduces `/guilds/{id}/auto-moderation/rules`)
 - Native Guild Scheduled Events & Polls (when added to Fluxer OpenAPI)
-- Presigned multipart file attachment uploads helper tool wrapping `POST /channels/{id}/attachments` + `/complete`
 - Optional OpenTelemetry OTLP exporter integration

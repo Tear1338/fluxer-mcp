@@ -14,7 +14,8 @@ import {
   ValidationError,
   WritePreview,
 } from './errors.js';
-import { FLUXER_PERMISSIONS } from './fluxer/constants.js';
+import { FLUXER_PERMISSIONS, GATEWAY_IDENTIFY_FLAGS, GATEWAY_OPCODES } from './fluxer/constants.js';
+import { createFluxerGatewayClient, type WebSocketLike } from './fluxer/gateway.js';
 import {
   compareRolesDesc,
   decodePermissionNames,
@@ -22,6 +23,8 @@ import {
   evaluateChannelPermissions,
   findDangerousPermissions,
 } from './fluxer/permissions.js';
+import type { FluxerRestClient } from './fluxer/rest.js';
+import { createLogger } from './logger.js';
 import { loadSignedState, saveSignedState } from './state.js';
 import { ALL_FLUXER_TOOLS } from './tools/index.js';
 
@@ -263,5 +266,113 @@ describe('signed local state & multilingual tool discovery', () => {
 
     const enSearch = searchTools(ALL_FLUXER_TOOLS, 'hoist roles');
     expect(enSearch.some((t) => t.name === 'roles_modify_hoist_positions')).toBe(true);
+  });
+});
+
+describe('native Fluxer WebSocket Gateway client', () => {
+  it('completes HELLO -> IDENTIFY (with Fluxer flags) -> READY -> DISPATCH -> HEARTBEAT_ACK -> RECONNECT -> RESUME', async () => {
+    class MockSocket implements WebSocketLike {
+      readyState = 1;
+      readonly sent: Array<Record<string, unknown>> = [];
+      private readonly listeners: Record<string, Array<(arg?: unknown) => void>> = {};
+
+      addEventListener(type: string, listener: (arg?: unknown) => void): void {
+        this.listeners[type] ??= [];
+        this.listeners[type].push(listener);
+      }
+
+      send(data: string): void {
+        this.sent.push(JSON.parse(data) as Record<string, unknown>);
+      }
+
+      close(code = 1000): void {
+        this.readyState = 3;
+        for (const fn of this.listeners.close ?? []) fn({ code });
+      }
+
+      emit(type: string, payload?: unknown): void {
+        for (const fn of this.listeners[type] ?? []) fn(payload);
+      }
+    }
+
+    const sockets: MockSocket[] = [];
+    const dispatched: Array<{ event: string; data: unknown }> = [];
+    const fakeRest = {
+      get: async () => ({ url: 'wss://gateway.fluxer.test', shards: 1 }),
+    } as unknown as FluxerRestClient;
+    const logger = createLogger(loadConfig({ FLUXER_TOKEN: VALID_TOKEN, LOG_LEVEL: 'fatal' }));
+
+    const gw = createFluxerGatewayClient({
+      rest: fakeRest,
+      token: VALID_TOKEN,
+      logger,
+      reconnectDelayMs: 15,
+      onDispatch: (event, data) => dispatched.push({ event, data }),
+      webSocketFactory: () => {
+        const sock = new MockSocket();
+        sockets.push(sock);
+        queueMicrotask(() => {
+          sock.emit('open');
+          sock.emit('message', {
+            data: JSON.stringify({ op: GATEWAY_OPCODES.HELLO, d: { heartbeat_interval: 60_000 } }),
+          });
+        });
+        return sock;
+      },
+    });
+
+    await gw.start();
+    expect(gw.connected).toBe(true);
+    expect(sockets.length).toBe(1);
+
+    const firstSocket = sockets[0]!;
+    const identify = firstSocket.sent.find((f) => f.op === GATEWAY_OPCODES.IDENTIFY);
+    expect(identify).toBeDefined();
+    expect((identify?.d as { flags: number }).flags).toBe(
+      GATEWAY_IDENTIFY_FLAGS.CHANNEL_THREADS | GATEWAY_IDENTIFY_FLAGS.DEBOUNCE_MESSAGE_REACTIONS,
+    );
+
+    // Server sends READY + MESSAGE_CREATE + HEARTBEAT request + HEARTBEAT_ACK
+    firstSocket.emit('message', {
+      data: JSON.stringify({
+        op: GATEWAY_OPCODES.DISPATCH,
+        t: 'READY',
+        s: 1,
+        d: { session_id: 'fluxer_sess_42' },
+      }),
+    });
+    firstSocket.emit('message', {
+      data: JSON.stringify({
+        op: GATEWAY_OPCODES.DISPATCH,
+        t: 'MESSAGE_CREATE',
+        s: 2,
+        d: { id: '700000000000000001', content: 'hi' },
+      }),
+    });
+    firstSocket.emit('message', {
+      data: JSON.stringify({ op: GATEWAY_OPCODES.HEARTBEAT }),
+    });
+    firstSocket.emit('message', {
+      data: JSON.stringify({ op: GATEWAY_OPCODES.HEARTBEAT_ACK }),
+    });
+
+    expect(gw.sessionId).toBe('fluxer_sess_42');
+    expect(dispatched.map((d) => d.event)).toEqual(['READY', 'MESSAGE_CREATE']);
+    expect(gw.getRecentEvents({ event: 'MESSAGE_CREATE' }).length).toBe(1);
+    expect(gw.getStatus().last_heartbeat_ack_ms).not.toBeNull();
+
+    // Server requests RECONNECT -> client reconnects and sends RESUME
+    firstSocket.emit('message', {
+      data: JSON.stringify({ op: GATEWAY_OPCODES.RECONNECT }),
+    });
+    await new Promise((r) => setTimeout(r, 60));
+    expect(sockets.length).toBe(2);
+    const resume = sockets[1]!.sent.find((f) => f.op === GATEWAY_OPCODES.RESUME);
+    expect(resume).toBeDefined();
+    expect((resume?.d as { session_id: string; seq: number }).session_id).toBe('fluxer_sess_42');
+    expect((resume?.d as { seq: number }).seq).toBe(2);
+
+    await gw.stop();
+    expect(gw.connected).toBe(false);
   });
 });

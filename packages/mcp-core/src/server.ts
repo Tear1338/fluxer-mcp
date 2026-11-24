@@ -15,6 +15,7 @@ import {
   searchTools,
 } from './discovery.js';
 import { FluxerMcpError, formatErrorForUser } from './errors.js';
+import type { GatewayClient } from './fluxer/gateway.js';
 import type { FluxerRestClient } from './fluxer/rest.js';
 import { ALWAYS_ALLOWED_CATEGORIES, executeToolWithMiddleware } from './middleware.js';
 import type { FluxerTool, ToolRuntimeContext } from './tools/_lib/types.js';
@@ -28,6 +29,7 @@ export interface BuildServerDeps {
   readonly logger: Logger;
   readonly transport?: 'stdio' | 'http';
   readonly auditSink?: AuditSink;
+  readonly gateway?: GatewayClient;
 }
 
 export interface BuildServerResult {
@@ -146,6 +148,7 @@ export function buildServer(deps: BuildServerDeps): BuildServerResult {
       config: deps.config,
       logger: deps.logger,
       signal,
+      ...(deps.gateway ? { gateway: deps.gateway } : {}),
       invokeTool: (nestedName, nestedArgs) => runTool(nestedName, nestedArgs, signal),
       getTools: () => visibleTools,
     };
@@ -290,6 +293,12 @@ export function buildServer(deps: BuildServerDeps): BuildServerResult {
         description: 'Registered tool counts by category for this Fluxer MCP instance',
         mimeType: 'application/json',
       },
+      {
+        uri: 'fluxer://instance/gateway',
+        name: 'Fluxer Gateway Live Status',
+        description: 'WebSocket Gateway connection state and recent buffered event summary',
+        mimeType: 'application/json',
+      },
     ],
   }));
 
@@ -323,6 +332,18 @@ export function buildServer(deps: BuildServerDeps): BuildServerResult {
             ),
           },
         ],
+      };
+    }
+    if (uri === 'fluxer://instance/gateway') {
+      const status = deps.gateway
+        ? { gateway_enabled: true, ...deps.gateway.getStatus() }
+        : {
+            gateway_enabled: false,
+            connected: false,
+            note: 'Set GATEWAY=true to enable live Fluxer WebSocket event buffering.',
+          };
+      return {
+        contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(status, null, 2) }],
       };
     }
     throw new Error(`Unknown Fluxer MCP resource URI: ${uri}`);

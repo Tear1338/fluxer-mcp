@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": false,
   "type": "module",
-  "description": "Native Fluxer Model Context Protocol core library with 172 typed tools, Cloud & self-hosted discovery, safety middleware, blueprints, security audits, and backup/restore.",
+  "description": "Native Fluxer Model Context Protocol core library with 184 typed tools, Cloud & self-hosted discovery, live Gateway, safety middleware, blueprints, security audits, auto-remediation, and backup/restore.",
   "keywords": [
     "mcp",
     "model-context-protocol",

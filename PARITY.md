@@ -8,24 +8,24 @@ This document tracks the individual analysis and porting status of every single 
 
 | Category | Upstream Tools | Ported / Adapted | Incompatible (No Fluxer API) | New Fluxer-Native / Advanced Tools | Total Fluxer MCP Tools |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `instance` (NEW) | 0 | 0 | 0 | 3 | **3** |
+| `instance` (NEW) | 0 | 0 | 0 | 5 | **5** |
 | `application` | 5 | 1 | 4 | 1 | **2** |
 | `audit_log` | 1 | 1 | 0 | 1 | **2** |
 | `automod` | 5 | 0 | 5 | 0 | **0** *(documented)* |
-| `channels` | 14 | 14 | 0 | 7 | **21** |
+| `channels` | 14 | 14 | 0 | 9 | **23** |
 | `commands` | 15 | 0 | 15 | 0 | **0** *(documented)* |
 | `components_v2` | 8 | 0 | 8 | 0 | **0** *(documented)* |
 | `discovery` (NEW) | 0 | 0 | 0 | 6 | **6** |
 | `emojis` | 5 | 4 | 1 | 4 | **8** |
 | `app_emojis` | 5 | 0 | 5 | 0 | **0** *(documented)* |
 | `events` (scheduled) | 6 | 0 | 6 | 0 | **0** *(documented)* |
-| `guild` & orchestration | 23 | 10 | 13 | 9 | **19** |
+| `guild` & orchestration | 23 | 10 | 13 | 11 | **21** |
 | `inspiration` | 1 | 1 | 0 | 0 | **1** |
 | `intelligence` | 5 | 5 | 0 | 0 | **5** |
 | `interactions` | 8 | 0 | 8 | 0 | **0** *(documented)* |
 | `invites` | 4 | 4 | 0 | 1 | **5** |
 | `members` | 15 | 15 | 0 | 3 | **18** |
-| `messages` | 16 | 16 | 0 | 4 | **20** |
+| `messages` | 16 | 16 | 0 | 7 | **23** |
 | `meta` & workflows | 6 | 6 | 0 | 0 | **6** |
 | `monetization` | 8 | 0 | 8 | 0 | **0** *(documented)* |
 | `onboarding` | 2 | 0 | 2 | 0 | **0** *(documented)* |
@@ -38,10 +38,10 @@ This document tracks the individual analysis and porting status of every single 
 | `stickers` | 7 | 5 | 2 | 3 | **8** |
 | `templates` | 9 | 0 | 9 | 0 | **0** *(replaced by native backup/diff/clone/blueprint)* |
 | `threads` | 6 | 6 | 0 | 0 | **6** |
-| `users` | 6 | 6 | 0 | 2 | **8** |
+| `users` | 6 | 6 | 0 | 5 | **11** |
 | `voice` | 3 | 0 | 3 | 0 | **0** *(voice moderation via `members_voice_moderate`)* |
 | `webhooks` | 13 | 13 | 0 | 4 | **17** |
-| **TOTAL** | **222** | **120** | **102** | **52** | **172** |
+| **TOTAL** | **222** | **120** | **102** | **64** | **184** |
 
 ---
 
@@ -84,7 +84,9 @@ Status legend:
 | --- | --- | --- | --- |
 | `instance_get_discovery` | — | `NEW` | `GET /.well-known/fluxer` (unversioned) |
 | `instance_list_badges` | — | `NEW` | `GET /instance/badges` |
-| `instance_get_gateway` | — | `NEW` | `GET /gateway/bot` |
+| `instance_get_gateway` | — | `NEW` | `GET /gateway/bot` + local Gateway status |
+| `instance_get_gateway_events` | — | `NEW` | Live Fluxer WebSocket Gateway status, heartbeat latency & buffered dispatch events (`GATEWAY=true`) |
+| `instance_list_experiments` | — | `NEW` | `GET /experiments` |
 
 ### 2. Application (`application`)
 
@@ -139,6 +141,8 @@ Status legend:
 | — | `channels_delete_forum_tag` | `NEW` | `DELETE /channels/{channel_id}/tags/{tag_id}` |
 | — | `channels_get_forum_post_data` | `NEW` | `POST /channels/{channel_id}/post-data` |
 | — | `channels_search_threads` | `NEW` | `GET /channels/{channel_id}/threads/search` |
+| — | `channels_add_group_dm_recipient` | `NEW` | `PUT /channels/{channel_id}/recipients/{user_id}` |
+| — | `channels_bulk_set_overwrites` | `NEW` | Batch permission overwrite applicator across up to 50 channels or an entire category (with `preview: true`) |
 
 ### 6. Slash Commands (`commands`) & Interactions (`interactions`) & Components V2 (`components_v2`)
 
@@ -197,6 +201,8 @@ Status legend:
 | — | `guild_config_diff` | `NEW` | Compare two community backups or backup vs live guild with security-impact annotations |
 | — | `guild_clone_plan` | `NEW` | Generate previewable, approval-bound duplication/restore plan from a source guild or backup to a target guild |
 | — | `guild_raid_shield` | `NEW` | Anti-raid assessment and reversible lockdown / restore coordinator |
+| — | `guild_configure_welcome` | `NEW` | Coordinated Fluxer welcome & rules system setup (`system_channel_id`, `system_channel_flags`, `rules_channel_id` + optional pinned welcome embed, previewable) |
+| — | `guild_remediate_plan` | `NEW` | Automated inconsistency & security misconfiguration detector generating a signed, restorable change plan (`guild_change_apply` / `guild_change_restore`) |
 | `guild_begin_prune` / `guild_get_prune_count` | — | `INCOMPATIBLE` | No member prune endpoint in Fluxer API v1. |
 | `guild_list_integrations` / `guild_delete_integration` | — | `INCOMPATIBLE` | No guild integrations endpoint in Fluxer API v1. |
 | `guild_get_welcome_screen` / `guild_modify_welcome_screen` | — | `INCOMPATIBLE` | No welcome screen endpoint; Fluxer uses `rules_channel_id`, `system_channel_id`, `system_channel_flags` in `guild_modify` + pinned/welcome messages. |
@@ -261,6 +267,9 @@ Status legend:
 | — | `messages_delete_attachment` | `NEW` | `DELETE /channels/{channel_id}/messages/{message_id}/attachments/{attachment_id}` |
 | — | `messages_get_crosspost_source` | `NEW` | `GET /channels/{channel_id}/messages/{message_id}/crosspost-source` |
 | — | `messages_refresh_attachment_urls` | `NEW` | `POST /attachments/refresh-urls` |
+| — | `messages_request_attachment_upload` | `NEW` | `POST /channels/{channel_id}/attachments` (presigned attachment upload URLs) |
+| — | `messages_complete_attachment_upload` | `NEW` | `POST /channels/{channel_id}/attachments/complete` (finalize multipart uploads) |
+| — | `messages_preload_channels` | `NEW` | `POST /users/@me/preload-messages` (batched message preloading across up to 100 channels in 1 request) |
 
 ### 13. Permissions (`permissions`)
 
@@ -332,6 +341,9 @@ Status legend:
 | `users_create_dm` | `users_create_dm` | `PORTED` | `POST /users/@me/channels` (DM-consent-gated) |
 | — | `users_get_profile` | `NEW` | `GET /users/{target_id}/profile` |
 | — | `users_list_dm_channels` | `NEW` | `GET /users/@me/channels` |
+| — | `users_pin_dm_channel` | `NEW` | `PUT /users/@me/channels/{channel_id}/pin` |
+| — | `users_unpin_dm_channel` | `NEW` | `DELETE /users/@me/channels/{channel_id}/pin` |
+| — | `users_check_tag` | `NEW` | `GET /users/check-tag` |
 
 ### 19. Webhooks (`webhooks`)
 

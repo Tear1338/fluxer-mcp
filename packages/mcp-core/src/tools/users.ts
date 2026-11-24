@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
 import {
+  ChannelId,
   defineTool,
   dualResult,
   type FluxerTool,
@@ -233,6 +234,81 @@ export const userTools: readonly FluxerTool[] = [
       return dualResult({
         text: `Found ${channels.length} private channel(s).`,
         data: { count: channels.length, channels },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'users_pin_dm_channel',
+    category: 'users',
+    description:
+      'Fluxer-native: pin a direct message channel in the current user DM list (`PUT /users/@me/channels/{channel_id}/pin`).',
+    inputSchema: {
+      channel_id: ChannelId.describe('DM channel snowflake ID to pin'),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      await ctx.rest.put(FluxerRoutes.currentUserChannelPin(args.channel_id));
+      return dualResult({
+        text: `Pinned DM channel \`${args.channel_id}\`.`,
+        data: { pinned: true, channel_id: args.channel_id },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'users_unpin_dm_channel',
+    category: 'users',
+    description:
+      'Fluxer-native: unpin a direct message channel in the current user DM list (`DELETE /users/@me/channels/{channel_id}/pin`).',
+    inputSchema: {
+      channel_id: ChannelId.describe('DM channel snowflake ID to unpin'),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      await ctx.rest.delete(FluxerRoutes.currentUserChannelPin(args.channel_id));
+      return dualResult({
+        text: `Unpinned DM channel \`${args.channel_id}\`.`,
+        data: { pinned: false, channel_id: args.channel_id },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'users_check_tag',
+    category: 'users',
+    description:
+      'Fluxer-native: check whether a Fluxer username + 4-digit discriminator tag is available (`GET /users/check-tag`).',
+    inputSchema: {
+      username: z.string().min(1).max(32).describe('Username to check'),
+      discriminator: z
+        .string()
+        .regex(/^\d{4}$/, 'Discriminator must be a 4-digit string (e.g. "0001")')
+        .describe('4-digit discriminator'),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      const res = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.userCheckTag(), {
+        query: { username: args.username, discriminator: args.discriminator },
+      });
+      return dualResult({
+        text: `Checked Fluxer tag \`${args.username}#${args.discriminator}\`: ${res.taken === true ? 'taken' : 'available'}.`,
+        data: { username: args.username, discriminator: args.discriminator, ...res },
       });
     },
   }),

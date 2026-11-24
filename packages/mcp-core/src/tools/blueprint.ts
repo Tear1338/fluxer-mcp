@@ -10,6 +10,7 @@ import {
 import {
   type ChannelLike,
   encodePermissionNames,
+  findDangerousPermissions,
   parsePermissionBits,
   type RoleLike,
 } from '../fluxer/permissions.js';
@@ -397,6 +398,7 @@ interface StoredChangePlan {
     readonly channels: ChannelLike[];
   };
   readonly changes: {
+    readonly guild_patch?: Record<string, unknown>;
     readonly roles: Array<{ id: string; patch: Record<string, unknown> }>;
     readonly channels: Array<{ id: string; patch: Record<string, unknown> }>;
     readonly permission_overwrites: Array<{
@@ -952,6 +954,15 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
         throw new Error(`Change plan "${args.plan_ref}" not found for guild ${args.guild_id}.`);
       }
 
+      if (
+        saved.payload.changes.guild_patch &&
+        Object.keys(saved.payload.changes.guild_patch).length > 0
+      ) {
+        await ctx.rest.patch(FluxerRoutes.guild(args.guild_id), {
+          body: saved.payload.changes.guild_patch,
+          reason: `Fluxer MCP change plan ${args.plan_ref}`,
+        });
+      }
       for (const r of saved.payload.changes.roles) {
         await ctx.rest.patch(FluxerRoutes.guildRole(args.guild_id, r.id), {
           body: r.patch,
@@ -1019,6 +1030,23 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       const roleBefore = new Map(saved.payload.before_snapshot.roles.map((r) => [r.id, r]));
       const chBefore = new Map(saved.payload.before_snapshot.channels.map((c) => [c.id, c]));
 
+      if (
+        saved.payload.changes.guild_patch &&
+        Object.keys(saved.payload.changes.guild_patch).length > 0
+      ) {
+        const origGuild = saved.payload.before_snapshot.guild;
+        const restorePatch: Record<string, unknown> = {};
+        for (const key of Object.keys(saved.payload.changes.guild_patch)) {
+          if (key in origGuild) restorePatch[key] = origGuild[key];
+        }
+        if (Object.keys(restorePatch).length > 0) {
+          await ctx.rest.patch(FluxerRoutes.guild(args.guild_id), {
+            body: restorePatch,
+            reason: `Fluxer MCP restore ${args.plan_ref}`,
+          });
+        }
+      }
+
       for (const r of saved.payload.changes.roles) {
         const orig = roleBefore.get(r.id);
         if (!orig) continue;
@@ -1065,6 +1093,186 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       return dualResult({
         text: `Restored pre-change configuration for guild \`${args.guild_id}\` from \`${args.plan_ref}\`.`,
         data: { status: 'restored', plan_ref: args.plan_ref, guild_id: args.guild_id },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'guild_remediate_plan',
+    category: 'guild',
+    guildScoped: true,
+    description:
+      'Automated inconsistency & security misconfiguration detector + restorable remediation planner. Inspects live Fluxer guild settings, `@everyone` dangerous permissions, and exposed rules/announcement channel overwrites, then saves a signed, previewable `plan_ref` executable via `guild_change_apply` and reversible via `guild_change_restore`. Performs ZERO mutations.',
+    inputSchema: {
+      guild_id: GuildId,
+      enforce_min_verification_level: z
+        .number()
+        .int()
+        .min(0)
+        .max(3)
+        .optional()
+        .describe('Minimum desired Fluxer verification_level (default 1 = LOW)'),
+      enforce_explicit_content_filter: z
+        .number()
+        .int()
+        .min(0)
+        .max(2)
+        .optional()
+        .describe('Minimum desired explicit_content_filter (default 1 = MEMBERS_WITHOUT_ROLES)'),
+      lock_rules_and_announcements: z
+        .boolean()
+        .optional()
+        .describe(
+          'Deny SEND_MESSAGES for @everyone on announcement channels and rules/welcome channels (default true)',
+        ),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      const [guild, roles, channels] = await Promise.all([
+        ctx.rest.get<Record<string, unknown>>(FluxerRoutes.guild(args.guild_id)),
+        ctx.rest.get<RoleLike[]>(FluxerRoutes.guildRoles(args.guild_id)),
+        ctx.rest.get<ChannelLike[]>(FluxerRoutes.guildChannels(args.guild_id)),
+      ]);
+
+      const detectedIssues: Array<{
+        severity: 'critical' | 'high' | 'medium';
+        issue: string;
+        fix: string;
+      }> = [];
+      const guildPatch: Record<string, unknown> = {};
+      const roleEdits: Array<{ id: string; patch: Record<string, unknown> }> = [];
+      const overwriteEdits: StoredChangePlan['changes']['permission_overwrites'] = [];
+
+      // 1. Guild verification_level & explicit_content_filter hardening
+      const minVerif = args.enforce_min_verification_level ?? GUILD_VERIFICATION_LEVEL.LOW;
+      const curVerif = Number(guild.verification_level ?? 0);
+      if (curVerif < minVerif) {
+        guildPatch.verification_level = minVerif;
+        detectedIssues.push({
+          severity: 'high',
+          issue: `Guild verification_level is ${curVerif} (below target ${minVerif}).`,
+          fix: `Raise verification_level from ${curVerif} to ${minVerif}.`,
+        });
+      }
+
+      const minFilter =
+        args.enforce_explicit_content_filter ?? GUILD_EXPLICIT_CONTENT_FILTER.MEMBERS_WITHOUT_ROLES;
+      const curFilter = Number(guild.explicit_content_filter ?? 0);
+      if (curFilter < minFilter) {
+        guildPatch.explicit_content_filter = minFilter;
+        detectedIssues.push({
+          severity: 'medium',
+          issue: `Guild explicit_content_filter is ${curFilter} (below target ${minFilter}).`,
+          fix: `Raise explicit_content_filter from ${curFilter} to ${minFilter}.`,
+        });
+      }
+
+      // 2. Strip critical/dangerous permissions from @everyone
+      const everyone = roles.find((r) => r.id === args.guild_id || r.name === '@everyone');
+      if (everyone) {
+        const curBits = parsePermissionBits(everyone.permissions);
+        const dangerous = findDangerousPermissions(curBits, true);
+        if (dangerous.length > 0) {
+          let stripMask = 0n;
+          for (const permName of dangerous) {
+            stripMask |= FLUXER_PERMISSIONS[permName];
+          }
+          const safeBits = curBits & ~stripMask;
+          roleEdits.push({
+            id: everyone.id,
+            patch: { permissions: safeBits.toString() },
+          });
+          detectedIssues.push({
+            severity: 'critical',
+            issue: `@everyone holds dangerous permission(s): ${dangerous.join(', ')}.`,
+            fix: `Strip ${dangerous.join(', ')} from @everyone role.`,
+          });
+        }
+      }
+
+      // 3. Ensure rules & announcement channels are read-only for @everyone
+      if (args.lock_rules_and_announcements !== false && everyone) {
+        const rulesChannelId =
+          typeof guild.rules_channel_id === 'string' ? guild.rules_channel_id : null;
+        for (const ch of channels) {
+          const isRules =
+            ch.id === rulesChannelId ||
+            (ch.type === FLUXER_CHANNEL_TYPES.GUILD_TEXT &&
+              /^(rules|regles|règles|announcements|annonces)$/i.test(ch.name ?? ''));
+          const isAnnouncement = ch.type === FLUXER_CHANNEL_TYPES.GUILD_ANNOUNCEMENT;
+          if (!isRules && !isAnnouncement) continue;
+
+          const existingOw = ch.permission_overwrites?.find((o) => o.id === everyone.id);
+          const curDeny = parsePermissionBits(existingOw?.deny ?? '0');
+          const curAllow = parsePermissionBits(existingOw?.allow ?? '0');
+          if ((curDeny & FLUXER_PERMISSIONS.SEND_MESSAGES) === 0n) {
+            const nextDeny = curDeny | FLUXER_PERMISSIONS.SEND_MESSAGES;
+            const nextAllow = curAllow & ~FLUXER_PERMISSIONS.SEND_MESSAGES;
+            overwriteEdits.push({
+              channel_id: ch.id,
+              overwrite_id: everyone.id,
+              type: 0,
+              allow: nextAllow.toString(),
+              deny: nextDeny.toString(),
+            });
+            detectedIssues.push({
+              severity: 'medium',
+              issue: `Read-only channel #${ch.name ?? ch.id} allows @everyone to send messages.`,
+              fix: `Deny SEND_MESSAGES for @everyone on #${ch.name ?? ch.id}.`,
+            });
+          }
+        }
+      }
+
+      if (detectedIssues.length === 0) {
+        return dualResult({
+          text: `No remediable security or configuration inconsistencies detected in guild \`${args.guild_id}\`.`,
+          data: {
+            status: 'clean',
+            plan_ref: null,
+            guild_id: args.guild_id,
+            issues_count: 0,
+            issues: [],
+          },
+        });
+      }
+
+      const planId = `rem_${args.guild_id}_${Date.now()}`;
+      const saved = saveSignedState<StoredChangePlan>({
+        stateDir: resolveStateDirectory(ctx.config),
+        namespace: 'changes',
+        id: planId,
+        secret: deriveSigningSecret(ctx.config),
+        payload: {
+          schema_version: 'fluxer_change_plan.v1',
+          guild_id: args.guild_id,
+          request: `Automated security & consistency remediation (${detectedIssues.length} fix(es))`,
+          before_snapshot: { guild, roles, channels },
+          changes: {
+            ...(Object.keys(guildPatch).length > 0 ? { guild_patch: guildPatch } : {}),
+            roles: roleEdits,
+            channels: [],
+            permission_overwrites: overwriteEdits,
+          },
+        },
+      });
+
+      return dualResult({
+        text: `Detected ${detectedIssues.length} inconsistency/security issue(s) in guild \`${args.guild_id}\`. Saved signed restorable remediation plan \`${saved.id}\` — apply with \`guild_change_apply\` or revert anytime with \`guild_change_restore\`.`,
+        data: {
+          status: 'remediation_ready',
+          plan_ref: saved.id,
+          plan_digest: saved.digest,
+          guild_id: args.guild_id,
+          issues_count: detectedIssues.length,
+          issues: detectedIssues,
+          planned_changes: saved.payload.changes,
+        },
       });
     },
   }),

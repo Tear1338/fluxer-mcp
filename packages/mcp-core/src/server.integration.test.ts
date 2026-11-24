@@ -67,18 +67,22 @@ afterAll(() => {
 });
 
 describe('Fluxer MCP server integration & safety contracts', () => {
-  it('exposes all 172 tools, resources, and prompts over MCP protocol', async () => {
+  it('exposes all 184 tools, resources, and prompts over MCP protocol', async () => {
     const conn = await connectTestClient();
     try {
       const { tools } = await conn.client.listTools();
       expect(tools.length).toBe(ALL_FLUXER_TOOLS.length);
-      expect(tools.length).toBe(172);
+      expect(tools.length).toBe(184);
 
       const { resources } = await conn.client.listResources();
       expect(resources.map((r) => r.uri)).toContain('fluxer://instance/discovery');
+      expect(resources.map((r) => r.uri)).toContain('fluxer://instance/gateway');
 
       const disc = await conn.client.readResource({ uri: 'fluxer://instance/discovery' });
       expect(disc.contents[0]?.text).toContain('api_code_version');
+
+      const gwRes = await conn.client.readResource({ uri: 'fluxer://instance/gateway' });
+      expect(gwRes.contents[0]?.text).toContain('gateway_enabled');
 
       const { prompts } = await conn.client.listPrompts();
       expect(prompts.map((p) => p.name)).toContain('build-fluxer-community');
@@ -427,6 +431,48 @@ describe('Fluxer MCP server integration & safety contracts', () => {
         },
       });
       expect((wf.structuredContent as { status: string }).status).toBe('completed');
+
+      // 6. Welcome System + Automated Inconsistency Remediation Plan -> Apply -> Restore
+      const welcome = await conn.client.callTool({
+        name: 'guild_configure_welcome',
+        arguments: {
+          guild_id: MOCK_GUILD_ID,
+          system_channel_id: MOCK_CHANNEL_ID,
+          rules_channel_id: MOCK_CHANNEL_ID,
+          suppress_join_notifications: false,
+          welcome_post: {
+            channel_id: MOCK_CHANNEL_ID,
+            content: 'Bienvenue dans notre communauté Fluxer !',
+            pin: true,
+          },
+        },
+      });
+      expect(welcome.isError).not.toBe(true);
+      expect((welcome.structuredContent as { status: string }).status).toBe('configured');
+
+      const remPlan = await conn.client.callTool({
+        name: 'guild_remediate_plan',
+        arguments: {
+          guild_id: MOCK_GUILD_ID,
+          enforce_min_verification_level: 2,
+          enforce_explicit_content_filter: 2,
+        },
+      });
+      expect(remPlan.isError).not.toBe(true);
+      const remRef = (remPlan.structuredContent as { plan_ref: string }).plan_ref;
+      expect(remRef).toMatch(/^rem_/);
+
+      const remApply = await conn.client.callTool({
+        name: 'guild_change_apply',
+        arguments: { guild_id: MOCK_GUILD_ID, plan_ref: remRef, __confirm: true },
+      });
+      expect((remApply.structuredContent as { status: string }).status).toBe('applied');
+
+      const remRestore = await conn.client.callTool({
+        name: 'guild_change_restore',
+        arguments: { guild_id: MOCK_GUILD_ID, plan_ref: remRef, __confirm: true },
+      });
+      expect((remRestore.structuredContent as { status: string }).status).toBe('restored');
     } finally {
       await conn.close();
     }
@@ -440,7 +486,7 @@ describe('Fluxer MCP server integration & safety contracts', () => {
     await client.connect(ct);
     try {
       const { tools } = await client.listTools();
-      expect(tools.length).toBe(172);
+      expect(tools.length).toBe(184);
       const res = await client.callTool({
         name: 'guild_get',
         arguments: { guild_id: MOCK_GUILD_ID },

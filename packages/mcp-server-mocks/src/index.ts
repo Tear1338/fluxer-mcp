@@ -67,6 +67,12 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       }),
     ),
 
+    http.get(`${v1}/experiments`, () =>
+      HttpResponse.json({
+        assignments: [{ id: 'fluxer_forum_tags_v2', bucket: 1 }],
+      }),
+    ),
+
     // Application & Users
     http.get(`${v1}/applications/@me`, () =>
       HttpResponse.json({
@@ -119,6 +125,34 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
     http.get(`${v1}/users/:userId/profile`, ({ params }) =>
       HttpResponse.json({ user: { id: params.userId, username: 'alice' }, bio: 'Fluxer user' }),
     ),
+
+    http.get(`${v1}/users/check-tag`, () => HttpResponse.json({ taken: false })),
+
+    http.put(
+      `${v1}/users/@me/channels/:channelId/pin`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.delete(
+      `${v1}/users/@me/channels/:channelId/pin`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+
+    http.post(`${v1}/users/@me/preload-messages`, async ({ request }) => {
+      const body = (await request.json()) as { channels: string[] };
+      const messagesByChannel: Record<string, unknown[]> = {};
+      for (const chId of body.channels ?? []) {
+        messagesByChannel[chId] = [
+          {
+            id: makeSnowflake(`preload_${chId}`),
+            channel_id: chId,
+            content: 'Preloaded message',
+            author: { id: MOCK_USER_ID, username: 'alice' },
+          },
+        ];
+      }
+      return HttpResponse.json(messagesByChannel);
+    }),
 
     http.get(`${v1}/users/:userId`, ({ params }) =>
       HttpResponse.json({ id: params.userId, username: 'alice', global_name: 'Alice', bot: false }),
@@ -506,6 +540,34 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
     ),
     http.delete(
       `${v1}/channels/:channelId/messages/:messageId/attachments/:attachmentId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.post(`${v1}/channels/:channelId/attachments`, async ({ request }) => {
+      const body = (await request.json()) as {
+        attachments: Array<{ id: number; filename: string }>;
+      };
+      return HttpResponse.json({
+        attachments: (body.attachments ?? []).map((a) => ({
+          id: a.id,
+          upload_url: `https://media.fluxer.app/upload/${a.filename}`,
+          upload_filename: `uploads/${a.id}_${a.filename}`,
+          upload_id: `upl_${a.id}`,
+        })),
+      });
+    }),
+    http.post(`${v1}/channels/:channelId/attachments/complete`, async ({ request }) => {
+      const body = (await request.json()) as {
+        uploads: Array<{ upload_filename: string; upload_id: string }>;
+      };
+      return HttpResponse.json({
+        completed: (body.uploads ?? []).map((u) => ({
+          upload_filename: u.upload_filename,
+          status: 'completed',
+        })),
+      });
+    }),
+    http.put(
+      `${v1}/channels/:channelId/recipients/:userId`,
       () => new HttpResponse(null, { status: 204 }),
     ),
     http.post(`${v1}/attachments/refresh-urls`, async ({ request }) => {

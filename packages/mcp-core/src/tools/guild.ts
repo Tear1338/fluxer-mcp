@@ -9,6 +9,7 @@ import {
   GUILD_NSFW_LEVEL,
   GUILD_SPLASH_CARD_ALIGNMENT,
   GUILD_VERIFICATION_LEVEL,
+  SYSTEM_CHANNEL_FLAGS,
 } from '../fluxer/constants.js';
 import {
   type ChannelLike,
@@ -33,6 +34,7 @@ import {
   type FluxerTool,
   GuildId,
   pickDefined,
+  RichEmbedSchema,
   wrapUntrusted,
 } from './_lib/types.js';
 
@@ -1044,6 +1046,118 @@ export const guildTools: readonly FluxerTool[] = [
             channels_to_create: channelsToCreate.length,
           },
           plan: planPayload.blueprint,
+        },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'guild_configure_welcome',
+    category: 'guild',
+    guildScoped: true,
+    requiredPermissions: ['MANAGE_GUILD'],
+    description:
+      'Configure Fluxer community welcome & rules systems in one coordinated operation: sets `system_channel_id`, `system_channel_flags` (join notifications), and `rules_channel_id` via `PATCH /guilds/{guild_id}`, and optionally posts & pins a rich welcome/rules embed. Set `preview: true` to inspect changes without mutating Fluxer.',
+    inputSchema: {
+      guild_id: GuildId,
+      system_channel_id: ChannelId.nullable()
+        .optional()
+        .describe('Welcome/system channel ID (null to clear)'),
+      rules_channel_id: ChannelId.nullable()
+        .optional()
+        .describe('Community rules channel ID (null to clear)'),
+      suppress_join_notifications: z
+        .boolean()
+        .optional()
+        .describe('Suppress Fluxer system join notifications (SYSTEM_CHANNEL_FLAGS bit 0)'),
+      welcome_post: z
+        .object({
+          channel_id: ChannelId.describe('Channel where the welcome/rules message will be posted'),
+          content: z.string().max(4000).optional(),
+          embeds: z.array(RichEmbedSchema).max(10).optional(),
+          pin: z.boolean().optional().describe('Pin the posted welcome message (default true)'),
+        })
+        .optional()
+        .describe('Optional welcome or rules message to publish and pin'),
+      preview: z
+        .boolean()
+        .optional()
+        .describe('Preview exact guild patch and welcome post without mutating Fluxer'),
+      audit_reason: AuditReasonSchema,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      const guildPatch: Record<string, unknown> = {};
+      if (args.system_channel_id !== undefined) {
+        guildPatch.system_channel_id = args.system_channel_id;
+      }
+      if (args.rules_channel_id !== undefined) {
+        guildPatch.rules_channel_id = args.rules_channel_id;
+      }
+      if (args.suppress_join_notifications !== undefined) {
+        guildPatch.system_channel_flags = args.suppress_join_notifications
+          ? SYSTEM_CHANNEL_FLAGS.SUPPRESS_JOIN_NOTIFICATIONS
+          : 0;
+      }
+
+      if (args.preview === true) {
+        return dualResult({
+          text: `Welcome configuration PREVIEW for guild \`${args.guild_id}\` (${Object.keys(guildPatch).length} guild setting(s)${args.welcome_post ? ' + 1 welcome post' : ''}). Re-run without \`preview: true\` to apply.`,
+          data: {
+            status: 'preview',
+            guild_id: args.guild_id,
+            guild_patch: guildPatch,
+            welcome_post: args.welcome_post ?? null,
+          },
+        });
+      }
+
+      let updatedGuild: Record<string, unknown> | null = null;
+      if (Object.keys(guildPatch).length > 0) {
+        updatedGuild = await ctx.rest.patch<Record<string, unknown>>(
+          FluxerRoutes.guild(args.guild_id),
+          {
+            body: guildPatch,
+            reason: args.audit_reason ?? 'Fluxer MCP configure welcome system',
+          },
+        );
+      }
+
+      let postedMessageId: string | null = null;
+      let pinned = false;
+      if (args.welcome_post) {
+        const msg = await ctx.rest.post<{ id: string }>(
+          FluxerRoutes.channelMessages(args.welcome_post.channel_id),
+          {
+            body: {
+              ...(args.welcome_post.content ? { content: args.welcome_post.content } : {}),
+              ...(args.welcome_post.embeds ? { embeds: args.welcome_post.embeds } : {}),
+            },
+          },
+        );
+        postedMessageId = msg.id;
+        if (args.welcome_post.pin !== false) {
+          await ctx.rest.put(FluxerRoutes.channelPinMessage(args.welcome_post.channel_id, msg.id), {
+            reason: args.audit_reason ?? 'Pin welcome message',
+          });
+          pinned = true;
+        }
+      }
+
+      return dualResult({
+        text: `Configured Fluxer welcome system for guild \`${args.guild_id}\`${postedMessageId ? ` and posted message \`${postedMessageId}\`${pinned ? ' (pinned)' : ''}` : ''}.`,
+        data: {
+          status: 'configured',
+          guild_id: args.guild_id,
+          guild_patch: guildPatch,
+          guild: updatedGuild,
+          welcome_message_id: postedMessageId,
+          pinned,
         },
       });
     },

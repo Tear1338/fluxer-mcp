@@ -33,8 +33,6 @@ export async function startStdio(
     );
   });
 
-  const built = buildServer({ rest, config, logger, transport: 'stdio', auditSink });
-
   let gateway: GatewayClient | null = null;
   if (config.GATEWAY) {
     gateway = createFluxerGatewayClient({
@@ -44,6 +42,15 @@ export async function startStdio(
       apiVersion: config.FLUXER_API_VERSION,
     });
   }
+
+  const built = buildServer({
+    rest,
+    config,
+    logger,
+    transport: 'stdio',
+    auditSink,
+    ...(gateway ? { gateway } : {}),
+  });
 
   let shuttingDown = false;
   const shutdown = async (reason: string) => {
@@ -64,7 +71,15 @@ export async function startStdio(
       process.on('SIGTERM', () => void shutdown('SIGTERM'));
     }
     serveStdio(
-      async () => buildServer({ rest, config, logger, transport: 'stdio', auditSink }).server,
+      async () =>
+        buildServer({
+          rest,
+          config,
+          logger,
+          transport: 'stdio',
+          auditSink,
+          ...(gateway ? { gateway } : {}),
+        }).server,
       {
         legacy: 'serve',
         onerror: (error) => logger.error({ err: error }, 'Fluxer MCP stdio transport error'),

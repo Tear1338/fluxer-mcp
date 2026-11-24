@@ -20,6 +20,7 @@ import {
   pickDefined,
   Snowflake,
   TagId,
+  UserId,
 } from './_lib/types.js';
 
 const ForumTagInputSchema = z.object({
@@ -833,6 +834,136 @@ export const channelTools: readonly FluxerTool[] = [
       return dualResult({
         text: `Thread search in \`${args.channel_id}\` returned ${threads.length} result(s).`,
         data: { channel_id: args.channel_id, count: threads.length, ...res },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'channels_add_group_dm_recipient',
+    category: 'channels',
+    description:
+      'Add a user to a Fluxer Group DM channel (`PUT /channels/{channel_id}/recipients/{user_id}`).',
+    inputSchema: {
+      channel_id: ChannelId.describe('Group DM channel snowflake ID'),
+      user_id: UserId.describe('User snowflake ID to add'),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      await ctx.rest.put(FluxerRoutes.channelRecipient(args.channel_id, args.user_id));
+      return dualResult({
+        text: `Added user \`${args.user_id}\` to Group DM \`${args.channel_id}\`.`,
+        data: { added: true, channel_id: args.channel_id, user_id: args.user_id },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'channels_bulk_set_overwrites',
+    category: 'channels',
+    guildScoped: true,
+    requiredPermissions: ['MANAGE_CHANNELS', 'MANAGE_ROLES'],
+    description:
+      'Grouped operation: apply (or preview) a Fluxer permission overwrite across up to 50 channels or every channel inside a target category in one coordinated call. Set `preview: true` to inspect affected channels without mutating Fluxer.',
+    inputSchema: {
+      guild_id: GuildId,
+      channel_ids: z
+        .array(ChannelId)
+        .min(1)
+        .max(50)
+        .optional()
+        .describe('Explicit channel IDs to update (1..50). Omit when using category_id.'),
+      category_id: ChannelId.optional().describe(
+        'Optional category channel ID: automatically selects all child channels under this category.',
+      ),
+      overwrite_id: Snowflake.describe('Target role ID or member user ID'),
+      type: z.union([z.literal(0), z.literal(1)]).describe('0 = role overwrite, 1 = member'),
+      allow: PermissionString.optional().describe('Allowed Fluxer permission bitfield string'),
+      deny: PermissionString.optional().describe('Denied Fluxer permission bitfield string'),
+      preview: z
+        .boolean()
+        .optional()
+        .describe(
+          'When true, returns the exact list of channels that would be updated without calling PUT',
+        ),
+      audit_reason: AuditReasonSchema,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (args, ctx) => {
+      let targetIds: string[] = args.channel_ids ? [...args.channel_ids] : [];
+      if (args.category_id) {
+        const allChannels = await ctx.rest.get<Array<{ id: string; parent_id?: string | null }>>(
+          FluxerRoutes.guildChannels(args.guild_id),
+        );
+        const childIds = allChannels
+          .filter((c) => c.parent_id === args.category_id)
+          .map((c) => c.id);
+        targetIds = [...new Set([...targetIds, ...childIds])].slice(0, 50);
+      }
+
+      if (targetIds.length === 0) {
+        return dualResult({
+          text: 'No target channels matched the provided `channel_ids` or `category_id`.',
+          data: { status: 'no_targets', updated: 0, failed: 0, results: [] },
+        });
+      }
+
+      if (args.preview === true) {
+        return dualResult({
+          text: `PREVIEW: would set overwrite \`${args.overwrite_id}\` (allow=${args.allow ?? '0'}, deny=${args.deny ?? '0'}) on ${targetIds.length} channel(s).`,
+          data: {
+            status: 'preview',
+            guild_id: args.guild_id,
+            overwrite_id: args.overwrite_id,
+            type: args.type,
+            allow: args.allow ?? '0',
+            deny: args.deny ?? '0',
+            target_channel_ids: targetIds,
+          },
+        });
+      }
+
+      const results: Array<{ channel_id: string; ok: boolean; error?: string }> = [];
+      for (const chId of targetIds) {
+        try {
+          await ctx.rest.put(FluxerRoutes.channelPermission(chId, args.overwrite_id), {
+            body: {
+              type: args.type,
+              allow: args.allow ?? '0',
+              deny: args.deny ?? '0',
+            },
+            ...(args.audit_reason ? { reason: args.audit_reason } : {}),
+          });
+          results.push({ channel_id: chId, ok: true });
+        } catch (err) {
+          results.push({
+            channel_id: chId,
+            ok: false,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+
+      const updated = results.filter((r) => r.ok).length;
+      const failed = results.length - updated;
+      return dualResult({
+        text: `Bulk overwrite applied to ${updated}/${results.length} channel(s)${failed > 0 ? ` (${failed} failed)` : ''}.`,
+        data: {
+          status: failed === 0 ? 'applied' : 'partial',
+          guild_id: args.guild_id,
+          updated,
+          failed,
+          results,
+        },
       });
     },
   }),

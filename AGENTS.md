@@ -4,7 +4,7 @@ This repository contains **Fluxer MCP**, a native Model Context Protocol (MCP) s
 
 ## Packages
 
-- `packages/mcp-core` (`@fluxer-mcp/core`): Native Fluxer API v1 client, discovery, Gateway, permissions, safety middleware, 172 typed MCP tools, blueprints, security audit, backup/diff/clone, and MCP server builder.
+- `packages/mcp-core` (`@fluxer-mcp/core`): Native Fluxer API v1 client, discovery, Gateway, permissions, safety middleware, 184 typed MCP tools, blueprints, security audit, auto-remediation, backup/diff/clone, and MCP server builder.
 - `packages/mcp-server` (`@fluxer-mcp/cli`): `fluxer-mcp` CLI (`serve`, `catalog`, `setup`, `doctor`, `smoke`, `init`, `profile`), stdio & Streamable HTTP transports, and AI client snippet generators.
 - `packages/mcp-server-mocks` (`@fluxer-mcp/server-mocks`): MSW v2 HTTP mocks matching Fluxer OpenAPI 3.1.0.
 

@@ -93,7 +93,91 @@ export const instanceAndApplicationTools: readonly FluxerTool[] = [
       const info = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.gatewayBot());
       return dualResult({
         text: `Fluxer Gateway URL: \`${String(info.url ?? 'unknown')}\` (shards: ${String(info.shards ?? 1)}).`,
-        data: info,
+        data: {
+          ...info,
+          local_gateway: ctx.gateway ? ctx.gateway.getStatus() : { connected: false },
+        },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'instance_get_gateway_events',
+    category: 'instance',
+    description:
+      'Inspect live Fluxer WebSocket Gateway connection state, heartbeat ACK latency, and recent buffered dispatch events (requires GATEWAY=true at server startup).',
+    inputSchema: {
+      event: z
+        .string()
+        .trim()
+        .min(1)
+        .max(64)
+        .optional()
+        .describe('Optional Fluxer Gateway event name filter (e.g. MESSAGE_CREATE, GUILD_UPDATE)'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Maximum buffered events to return (default 25)'),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.gateway) {
+        return dualResult({
+          text: 'Fluxer Gateway listener is disabled (`GATEWAY=false`). Start the server with `GATEWAY=true` to stream and inspect live Fluxer WebSocket events.',
+          data: {
+            gateway_enabled: false,
+            connected: false,
+            events: [],
+          },
+        });
+      }
+      const status = ctx.gateway.getStatus();
+      const events = ctx.gateway.getRecentEvents({
+        ...(args.event ? { event: args.event } : {}),
+        ...(args.limit ? { limit: args.limit } : {}),
+      });
+      return dualResult({
+        text: `Fluxer Gateway ${status.connected ? 'CONNECTED' : 'DISCONNECTED'} (session: \`${status.session_id ?? 'none'}\`, ${events.length} event(s) returned / ${status.total_dispatched} total dispatched).`,
+        data: {
+          gateway_enabled: true,
+          status,
+          count: events.length,
+          events,
+        },
+      });
+    },
+  }),
+
+  defineTool({
+    name: 'instance_list_experiments',
+    category: 'instance',
+    description:
+      'Fetch Fluxer instance & bot experiment feature-flag assignments (`GET /experiments`). Useful for checking feature rollouts on Cloud or self-hosted Fluxer instances.',
+    inputSchema: {},
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (_args, ctx) => {
+      const res = await ctx.rest.get<unknown>(FluxerRoutes.experiments());
+      const experiments = Array.isArray(res)
+        ? res
+        : ((res as { assignments?: unknown[]; experiments?: unknown[] })?.assignments ??
+          (res as { experiments?: unknown[] })?.experiments ??
+          []);
+      return dualResult({
+        text: `Retrieved ${experiments.length} Fluxer experiment assignment(s).`,
+        data: { count: experiments.length, raw: res },
       });
     },
   }),

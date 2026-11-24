@@ -4,7 +4,7 @@
   "private": false,
   "type": "module",
   "mcpName": "io.github.tear1338/fluxer-mcp",
-  "description": "Native Fluxer MCP server & CLI for AI agents (Claude Code, Claude Desktop, Codex, Cursor, VS Code) — Cloud & self-hosted support, 172 typed tools, blueprints, security audits, and moderation.",
+  "description": "Native Fluxer MCP server & CLI for AI agents (Claude Code, Claude Desktop, Codex, Cursor, VS Code) — Cloud & self-hosted support, 184 typed tools, blueprints, security audits, auto-remediation, and moderation.",
   "bin": {
     "fluxer-mcp": "./dist/cli.js",
     "fluxer-mcp-server": "./dist/cli.js"

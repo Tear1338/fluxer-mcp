@@ -315,6 +315,7 @@ export const FluxerRoutes = {
   instanceDiscovery: () => '/.well-known/fluxer' as const,
   instanceBadges: () => '/instance/badges' as const,
   gatewayBot: () => '/gateway/bot' as const,
+  experiments: () => '/experiments' as const,
 
   // Applications / OAuth2
   currentApplication: () => '/applications/@me' as const,
@@ -376,6 +377,11 @@ export const FluxerRoutes = {
   channelFollowerStats: (channelId: string) => `/channels/${channelId}/follower-stats` as const,
   channelInvites: (channelId: string) => `/channels/${channelId}/invites` as const,
   channelWebhooks: (channelId: string) => `/channels/${channelId}/webhooks` as const,
+  channelRecipient: (channelId: string, userId: string) =>
+    `/channels/${channelId}/recipients/${userId}` as const,
+  channelAttachments: (channelId: string) => `/channels/${channelId}/attachments` as const,
+  channelAttachmentsComplete: (channelId: string) =>
+    `/channels/${channelId}/attachments/complete` as const,
 
   // Forum Tags & Posts
   channelTags: (channelId: string) => `/channels/${channelId}/tags` as const,
@@ -439,6 +445,9 @@ export const FluxerRoutes = {
   currentUserGuilds: () => '/users/@me/guilds' as const,
   currentUserGuild: (guildId: string) => `/users/@me/guilds/${guildId}` as const,
   currentUserChannels: () => '/users/@me/channels' as const,
+  currentUserChannelPin: (channelId: string) => `/users/@me/channels/${channelId}/pin` as const,
+  currentUserPreloadMessages: () => '/users/@me/preload-messages' as const,
+  userCheckTag: () => '/users/check-tag' as const,
   user: (userId: string) => `/users/${userId}` as const,
   userProfile: (userId: string) => `/users/${userId}/profile` as const,
 

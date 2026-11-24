@@ -87,6 +87,9 @@ export {
   type GatewayBotInfo,
   type GatewayClient,
   type GatewayClientOptions,
+  type GatewayEventRecord,
+  type GatewayStatus,
+  type WebSocketLike,
 } from './fluxer/gateway.js';
 export {
   applyOverwrite,

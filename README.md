@@ -2,7 +2,7 @@
 
 **The native Model Context Protocol (MCP) server for [Fluxer](https://fluxer.com/) — Cloud & Self-Hosted.**
 
-Connect **Claude Code**, **Claude Desktop**, **OpenAI Codex**, **Cursor**, **VS Code**, **Windsurf**, **Cline**, **Roo Code**, **Zed**, or any MCP-compatible AI client directly to your Fluxer bot. Create, architect, administer, moderate, audit, back up, clone, and secure entire Fluxer communities through **172 strictly typed, Fluxer-native tools**.
+Connect **Claude Code**, **Claude Desktop**, **OpenAI Codex**, **Cursor**, **VS Code**, **Windsurf**, **Cline**, **Roo Code**, **Zed**, or any MCP-compatible AI client directly to your Fluxer bot. Create, architect, administer, moderate, audit, back up, clone, and secure entire Fluxer communities through **184 strictly typed, Fluxer-native tools**.
 
 [![CI](https://github.com/Tear1338/fluxer-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Tear1338/fluxer-mcp/actions/workflows/ci.yml)
 [![Apache-2.0 License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
@@ -161,19 +161,19 @@ curl -H "Authorization: Bearer $FLUXER_MCP_ACCESS_TOKEN" http://127.0.0.1:3000/h
 
 ---
 
-## Tool Catalog Overview (172 Tools across 20 Categories)
+## Tool Catalog Overview (184 Tools across 20 Categories)
 
 | Category | Tools | Highlights |
 | --- | ---: | --- |
-| `instance` | 3 | `/.well-known/fluxer` discovery, instance badges, gateway info |
+| `instance` | 5 | `/.well-known/fluxer` discovery, instance badges, gateway info, live gateway events buffer, `/experiments` |
 | `application` | 2 | Current bot app metadata, public application lookup |
-| `guild` | 19 | Settings, vanity URL, channel positions, **Blueprints** (compile/plan/apply/evidence), **Change Plan/Apply/Restore**, **Security Audit**, **Raid Shield**, **Backup Export**, **Config Diff**, **Clone Plan** |
-| `channels` | 21 | CRUD, overwrites, `GUILD_LINK (998)`, slowmode state, follower stats, **Forum Tag CRUD**, forum post data, thread search & archives |
+| `guild` | 21 | Settings, vanity URL, channel positions, **Welcome System Configurator**, **Blueprints** (compile/plan/apply/evidence), **Change Plan/Apply/Restore**, **Auto-Remediation Plan**, **Security Audit**, **Raid Shield**, **Backup Export**, **Config Diff**, **Clone Plan** |
+| `channels` | 23 | CRUD, overwrites, **Bulk Overwrites**, `GUILD_LINK (998)`, Group DM recipients, slowmode state, follower stats, **Forum Tag CRUD**, forum post data, thread search & archives |
 | `threads` | 6 | Join, leave, add/remove/get/list thread members |
 | `roles` | 8 | CRUD, positions, Fluxer **hoist positions**, **Role Hierarchy Analyzer** |
 | `permissions` | 3 | Channel role audit, member permission trace (`permissions_explain`), guild-wide member access report |
 | `members` | 18 | List, get, Fluxer `POST /members-search`, role assign/bulk-assign/bulk-remove, kick, **temp bans (`ban_duration_seconds`)**, bulk ban, unban, **timeout (`timeout_reason`)**, **voice moderation** |
-| `messages` | 20 | Send (up to 4000 chars + embeds), read, edit, delete, bulk delete, pins, crosspost + source, attachment delete/refresh, **Fluxer full-text search**, cited context, rich composer |
+| `messages` | 23 | Send (up to 4000 chars + embeds), read, edit, delete, bulk delete, pins, crosspost + source, attachment delete/refresh, **Presigned Upload Request & Finalize**, **Batched Multi-Channel Preload**, **Fluxer full-text search**, cited context, rich composer |
 | `reactions` | 6 | Add, remove own/user/emoji/all, list reactors |
 | `invites` | 5 | Channel & guild invites list, create, inspect, delete |
 | `emojis` | 8 | List, create, **bulk create**, **clone**, modify, delete, metadata, source |
@@ -181,7 +181,7 @@ curl -H "Authorization: Bearer $FLUXER_MCP_ACCESS_TOKEN" http://127.0.0.1:3000/h
 | `discovery` | 6 | Categories, search discoverable guilds, status, apply, update, withdraw |
 | `webhooks` | 17 | Full CRUD + execute + message edit/delete + GitHub, Slack, **Instatus**, **Libredesk** |
 | `audit_log` | 2 | Filtered audit logs (all 38 Fluxer action types) + anomaly summary |
-| `users` | 8 | Current user, profile lookup, guild list, leave guild, DM channels |
+| `users` | 11 | Current user, profile lookup, guild list, leave guild, DM channels, **DM pin/unpin**, **tag availability check** |
 | `intelligence` | 5 | Channel summary, message classification, entity extraction, **heuristic spam/scam/raid moderation**, reply drafting |
 | `inspiration` | 1 | Read-only emoji.gg search |
 | `meta` | 6 | Intent planner, multi-step `mcp_pipeline`, durable `workflow_start/status/resume/cancel` |
@@ -202,7 +202,7 @@ See the complete tool reference in [docs/TOOLS.md](docs/TOOLS.md) and the full D
 | `FLUXER_EXPECTED_BOT_ID` | *(unset)* | Identity lock verified against `GET /users/@me` |
 | `MCP_WRITE_MODE` | `allow` | Set `preview` to block ALL mutating calls with a preview |
 | `MCP_DRY_RUN` | `true` | Blocks destructive tools unless set to `false` AND `__confirm: true` is passed |
-| `MCP_TOOL_SURFACE` | `full` | `full` (all 172 tools) or `progressive` (compact search + risk dispatchers) |
+| `MCP_TOOL_SURFACE` | `full` | `full` (all 184 tools) or `progressive` (compact search + risk dispatchers) |
 | `MCP_CATEGORIES` | *(all)* | Comma-separated tool category allowlist (`meta` & `instance` stay reachable) |
 | `MCP_DM_CONSENT_MODE` | `advisory` | Set `require` to demand `__confirm: true` before opening a DM |
 

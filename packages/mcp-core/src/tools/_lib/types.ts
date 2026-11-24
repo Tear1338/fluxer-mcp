@@ -3,6 +3,7 @@ import type { Logger } from 'pino';
 import { z } from 'zod';
 import type { Config } from '../../config.js';
 import type { FluxerPermissionName } from '../../fluxer/constants.js';
+import type { GatewayClient } from '../../fluxer/gateway.js';
 import type { FluxerRestClient } from '../../fluxer/rest.js';
 
 export const Snowflake = z
@@ -86,6 +87,8 @@ export interface ToolRuntimeContext {
   readonly config: Config;
   readonly logger: Logger;
   readonly signal: AbortSignal;
+  /** Optional active Fluxer Gateway client when GATEWAY=true. */
+  readonly gateway?: GatewayClient;
   /** Invoke another registered tool in-process (used by pipeline, workflows, and orchestrators). */
   readonly invokeTool: (toolName: string, args: Record<string, unknown>) => Promise<CallToolResult>;
   /** All currently registered tools (used by meta/intent planners). */

@@ -4,9 +4,12 @@ import { Readable } from 'node:stream';
 import {
   buildServer,
   createAuditSink,
+  createFluxerGatewayClient,
   createLogger,
   FluxerRestClient,
+  type GatewayClient,
   loadConfig,
+  stripAuthPrefix,
   verifyExpectedBotIdentity,
 } from '@fluxer-mcp/core';
 import {
@@ -85,12 +88,38 @@ export async function startHttp(options: StartHttpOptions = {}): Promise<Server>
     await verifyExpectedBotIdentity(rest, config.FLUXER_EXPECTED_BOT_ID);
   }
 
+  let gateway: GatewayClient | null = null;
+  if (config.GATEWAY) {
+    gateway = createFluxerGatewayClient({
+      rest,
+      token: stripAuthPrefix(config.FLUXER_TOKEN),
+      logger,
+      apiVersion: config.FLUXER_API_VERSION,
+    });
+    try {
+      await gateway.start();
+    } catch (err) {
+      logger.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        'Fluxer Gateway failed to start; continuing in REST-only mode',
+      );
+    }
+  }
+
   const reportError = (error: Error) => {
     logger.error({ err: error }, 'Fluxer MCP HTTP error');
   };
 
   const mcpHandler = createMcpHandler(
-    async () => buildServer({ rest, config, logger, transport: 'http', auditSink }).server,
+    async () =>
+      buildServer({
+        rest,
+        config,
+        logger,
+        transport: 'http',
+        auditSink,
+        ...(gateway ? { gateway } : {}),
+      }).server,
     { legacy: 'stateless', onerror: reportError },
   );
   const handleNodeMcp = toNodeHandler(mcpHandler, { onerror: reportError });
@@ -171,8 +200,7 @@ export async function startHttp(options: StartHttpOptions = {}): Promise<Server>
     const shutdown = async (signal: string) => {
       logger.info({ signal }, 'Shutting down fluxer-mcp (http)');
       await new Promise<void>((resolve) => server.close(() => resolve()));
-      await mcpHandler.close().catch(() => {});
-      await auditSink.shutdown?.();
+      await Promise.allSettled([gateway?.stop(), mcpHandler.close(), auditSink.shutdown?.()]);
       process.exit(0);
     };
     process.on('SIGINT', () => void shutdown('SIGINT'));
