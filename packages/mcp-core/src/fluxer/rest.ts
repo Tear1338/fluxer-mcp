@@ -306,6 +306,7 @@ export class FluxerRestClient {
     route: string,
     opts: FluxerRequestOptions | undefined,
     policySignal: AbortSignal,
+    rateLimitAttempt = 0,
   ): Promise<T> {
     const url = resolveFluxerUrl(this.apiUrl, this.apiVersion, route, opts?.unversioned);
     const headers: Record<string, string> = {
@@ -361,10 +362,26 @@ export class FluxerRestClient {
           typeof (parsed as { retry_after?: unknown }).retry_after === 'number'
             ? (parsed as { retry_after: number }).retry_after
             : undefined;
+        const retryAfterSec = bodyRetry ?? (Number.isFinite(retryHeader) ? retryHeader : 1);
+        const retryAfterMs = Math.ceil(Math.max(0.25, retryAfterSec) * 1000) + 150;
+        if (rateLimitAttempt < 3 && retryAfterMs <= 15_000 && !signal.aborted) {
+          await new Promise<void>((resolve, reject) => {
+            const onAbort = () => {
+              clearTimeout(timer);
+              reject(signal.reason ?? new Error('Aborted while waiting for Fluxer rate limit'));
+            };
+            const timer = setTimeout(() => {
+              signal.removeEventListener('abort', onAbort);
+              resolve();
+            }, retryAfterMs);
+            signal.addEventListener('abort', onAbort, { once: true });
+          });
+          return this.performFetch<T>(method, route, opts, policySignal, rateLimitAttempt + 1);
+        }
         const rlBody: RateLimitErrorBody = {
           code: 'RATE_LIMITED',
           message: (isApiErrorBody(parsed) ? parsed.message : null) ?? 'Rate limited by Fluxer API',
-          retry_after: bodyRetry ?? (Number.isFinite(retryHeader) ? retryHeader : 1),
+          retry_after: retryAfterSec,
           global:
             typeof parsed === 'object' &&
             parsed !== null &&
