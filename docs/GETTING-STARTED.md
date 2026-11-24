@@ -42,7 +42,7 @@ npx -y @fluxer-mcp/cli catalog --check
 ### Option C: From source (monorepo)
 
 ```bash
-git clone https://github.com/fluxer-mcp/fluxer-mcp.git
+git clone https://github.com/Tear1338/fluxer-mcp.git
 cd fluxer-mcp
 pnpm install
 pnpm build

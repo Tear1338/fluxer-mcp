@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": false,
   "type": "module",
-  "description": "Native Fluxer Model Context Protocol core library with 173 typed tools, Cloud & self-hosted discovery, safety middleware, blueprints, security audits, and backup/restore.",
+  "description": "Native Fluxer Model Context Protocol core library with 172 typed tools, Cloud & self-hosted discovery, safety middleware, blueprints, security audits, and backup/restore.",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -18,7 +18,7 @@
   "homepage": "https://docs.fluxer.com/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fluxer-mcp/fluxer-mcp.git",
+    "url": "git+https://github.com/Tear1338/fluxer-mcp.git",
     "directory": "packages/mcp-core"
   },
   "publishConfig": {

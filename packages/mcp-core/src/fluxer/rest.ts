@@ -310,7 +310,7 @@ export class FluxerRestClient {
     const url = resolveFluxerUrl(this.apiUrl, this.apiVersion, route, opts?.unversioned);
     const headers: Record<string, string> = {
       Accept: 'application/json',
-      'User-Agent': 'fluxer-mcp/1.0.0 (+https://github.com/fluxer-mcp/fluxer-mcp)',
+      'User-Agent': 'fluxer-mcp/1.0.0 (+https://github.com/Tear1338/fluxer-mcp)',
       ...(opts?.headers ?? {}),
     };
     if (opts?.auth !== false && this.token) {

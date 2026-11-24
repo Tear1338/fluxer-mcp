@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.fluxer-mcp/fluxer-mcp",
+  "name": "io.github.tear1338/fluxer-mcp",
   "title": "Fluxer MCP",
-  "description": "Native Model Context Protocol server for Fluxer Cloud & self-hosted communities: 173 typed tools, blueprints, security audits, backups, and moderation.",
+  "description": "Native Model Context Protocol server for Fluxer Cloud & self-hosted communities: 172 typed tools, blueprints, security audits, backups, and moderation.",
   "version": "1.0.0",
   "websiteUrl": "https://docs.fluxer.com/",
   "repository": {
-    "url": "https://github.com/fluxer-mcp/fluxer-mcp",
+    "url": "https://github.com/Tear1338/fluxer-mcp",
     "source": "github"
   },
   "packages": [

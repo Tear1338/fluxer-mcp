@@ -110,7 +110,7 @@ export function buildProgressiveMetaTools(): McpTool[] {
     {
       name: PROGRESSIVE_SEARCH_TOOL_NAME,
       description:
-        'Search the full Fluxer MCP catalog (173 typed tools) by keyword, category, or risk level. Returns exact tool names and summaries to invoke via fluxer_read, fluxer_write, or fluxer_destructive.',
+        'Search the full Fluxer MCP catalog (172 typed tools) by keyword, category, or risk level. Returns exact tool names and summaries to invoke via fluxer_read, fluxer_write, or fluxer_destructive.',
       inputSchema: {
         type: 'object',
         properties: {

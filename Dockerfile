@@ -33,7 +33,7 @@ WORKDIR /app
 
 LABEL org.opencontainers.image.title="Fluxer MCP" \
       org.opencontainers.image.description="Native Model Context Protocol server for Fluxer Cloud and self-hosted communities." \
-      org.opencontainers.image.source="https://github.com/fluxer-mcp/fluxer-mcp" \
+      org.opencontainers.image.source="https://github.com/Tear1338/fluxer-mcp" \
       org.opencontainers.image.licenses="Apache-2.0"
 
 RUN mkdir -p /data/state && chown -R node:node /data
