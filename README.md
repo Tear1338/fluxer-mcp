@@ -4,6 +4,7 @@
 
 Connect **Claude Code**, **Claude Desktop**, **OpenAI Codex**, **Cursor**, **VS Code**, **Windsurf**, **Cline**, **Roo Code**, **Zed**, or any MCP-compatible AI client directly to your Fluxer bot. Create, architect, administer, moderate, audit, back up, clone, and secure entire Fluxer communities through **172 strictly typed, Fluxer-native tools**.
 
+[![CI](https://github.com/Tear1338/fluxer-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Tear1338/fluxer-mcp/actions/workflows/ci.yml)
 [![Apache-2.0 License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Node.js >= 22.13](https://img.shields.io/badge/node-%3E%3D22.13-brightgreen)](https://nodejs.org/)
 [![Fluxer API v1](https://img.shields.io/badge/Fluxer%20API-v1%20Native-4641d9)](https://docs.fluxer.com/)

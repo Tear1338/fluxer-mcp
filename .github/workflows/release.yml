@@ -30,9 +30,12 @@ jobs:
       - run: pnpm test
       - run: pnpm catalog:check
       - name: Publish @fluxer-mcp/core and @fluxer-mcp/cli
-        if: env.NPM_TOKEN != ''
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          pnpm --filter @fluxer-mcp/core publish --no-git-checks --access public
-          pnpm --filter @fluxer-mcp/cli publish --no-git-checks --access public
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            pnpm --filter @fluxer-mcp/core publish --no-git-checks --access public
+            pnpm --filter @fluxer-mcp/cli publish --no-git-checks --access public
+          else
+            echo "Skipping npm publish because NPM_TOKEN secret is not configured."
+          fi
