@@ -81,10 +81,7 @@ export async function executeToolWithMiddleware(
   const channelIdHint =
     typeof cleanedInput.channel_id === 'string' ? cleanedInput.channel_id : undefined;
 
-  const emitAudit = (
-    outcome: 'success' | 'error' | 'blocked' | 'preview',
-    errorCode?: string,
-  ) => {
+  const emitAudit = (outcome: 'success' | 'error' | 'blocked' | 'preview', errorCode?: string) => {
     deps.auditSink.emit({
       timestamp: new Date().toISOString(),
       tool: tool.name,
@@ -184,7 +181,9 @@ export async function executeToolWithMiddleware(
   } catch (err) {
     if (!(err instanceof DryRunPreview) && !(err instanceof WritePreview)) {
       const code =
-        err instanceof Error && 'code' in err && typeof (err as { code?: unknown }).code === 'string'
+        err instanceof Error &&
+        'code' in err &&
+        typeof (err as { code?: unknown }).code === 'string'
           ? (err as { code: string }).code
           : 'ERROR';
       emitAudit('error', code);

@@ -3,14 +3,14 @@ import { FluxerRoutes } from '../fluxer/constants.js';
 import {
   AuditReasonSchema,
   ChannelId,
+  defineTool,
+  dualResult,
   type FluxerTool,
   GuildId,
   MessageId,
+  pickDefined,
   RichEmbedSchema,
   WebhookId,
-  defineTool,
-  dualResult,
-  pickDefined,
 } from './_lib/types.js';
 
 const WebhookTokenSchema = z.string().trim().min(10).max(256).describe('Opaque webhook token');
@@ -20,11 +20,19 @@ export const webhookTools: readonly FluxerTool[] = [
     name: 'webhooks_list_channel',
     category: 'webhooks',
     requiredPermissions: ['MANAGE_WEBHOOKS'],
-    description: 'List webhooks configured on a Fluxer channel (`GET /channels/{channel_id}/webhooks`).',
+    description:
+      'List webhooks configured on a Fluxer channel (`GET /channels/{channel_id}/webhooks`).',
     inputSchema: { channel_id: ChannelId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const webhooks = await ctx.rest.get<Array<Record<string, unknown>>>(FluxerRoutes.channelWebhooks(args.channel_id));
+      const webhooks = await ctx.rest.get<Array<Record<string, unknown>>>(
+        FluxerRoutes.channelWebhooks(args.channel_id),
+      );
       return dualResult({
         text: `Found ${webhooks.length} webhook(s) in channel \`${args.channel_id}\`.`,
         data: { channel_id: args.channel_id, count: webhooks.length, webhooks },
@@ -39,9 +47,16 @@ export const webhookTools: readonly FluxerTool[] = [
     guildScoped: true,
     description: 'List all webhooks across a Fluxer guild (`GET /guilds/{guild_id}/webhooks`).',
     inputSchema: { guild_id: GuildId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const webhooks = await ctx.rest.get<Array<Record<string, unknown>>>(FluxerRoutes.guildWebhooks(args.guild_id));
+      const webhooks = await ctx.rest.get<Array<Record<string, unknown>>>(
+        FluxerRoutes.guildWebhooks(args.guild_id),
+      );
       return dualResult({
         text: `Found ${webhooks.length} webhook(s) in guild \`${args.guild_id}\`.`,
         data: { guild_id: args.guild_id, count: webhooks.length, webhooks },
@@ -53,20 +68,29 @@ export const webhookTools: readonly FluxerTool[] = [
     name: 'webhooks_create',
     category: 'webhooks',
     requiredPermissions: ['MANAGE_WEBHOOKS'],
-    description: 'Create an incoming webhook on a Fluxer channel (`POST /channels/{channel_id}/webhooks`).',
+    description:
+      'Create an incoming webhook on a Fluxer channel (`POST /channels/{channel_id}/webhooks`).',
     inputSchema: {
       channel_id: ChannelId,
       name: z.string().min(1).max(80),
       avatar: z.string().nullable().optional().describe('Base64 image data URI or null'),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, ['name', 'avatar']);
-      const wh = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.channelWebhooks(args.channel_id), {
-        body,
-        ...(args.audit_reason ? { reason: args.audit_reason } : {}),
-      });
+      const wh = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.channelWebhooks(args.channel_id),
+        {
+          body,
+          ...(args.audit_reason ? { reason: args.audit_reason } : {}),
+        },
+      );
       return dualResult({
         text: `Created webhook **${String(wh.name ?? args.name)}** (\`webhook:${String(wh.id ?? '')}\`).`,
         data: wh,
@@ -80,7 +104,12 @@ export const webhookTools: readonly FluxerTool[] = [
     requiredPermissions: ['MANAGE_WEBHOOKS'],
     description: 'Get a Fluxer webhook by ID (`GET /webhooks/{webhook_id}`).',
     inputSchema: { webhook_id: WebhookId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const wh = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.webhook(args.webhook_id));
       return dualResult({ text: `Fetched webhook \`${args.webhook_id}\`.`, data: wh });
@@ -90,9 +119,15 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_get_with_token',
     category: 'webhooks',
-    description: 'Get a Fluxer webhook using its opaque token (`GET /webhooks/{webhook_id}/{token}`, no bot auth required).',
+    description:
+      'Get a Fluxer webhook using its opaque token (`GET /webhooks/{webhook_id}/{token}`, no bot auth required).',
     inputSchema: { webhook_id: WebhookId, webhook_token: WebhookTokenSchema },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const wh = await ctx.rest.get<Record<string, unknown>>(
         FluxerRoutes.webhookWithToken(args.webhook_id, args.webhook_token),
@@ -106,7 +141,8 @@ export const webhookTools: readonly FluxerTool[] = [
     name: 'webhooks_modify',
     category: 'webhooks',
     requiredPermissions: ['MANAGE_WEBHOOKS'],
-    description: 'Modify a Fluxer webhook (`PATCH /webhooks/{webhook_id}`): rename, update avatar, or move to another channel.',
+    description:
+      'Modify a Fluxer webhook (`PATCH /webhooks/{webhook_id}`): rename, update avatar, or move to another channel.',
     inputSchema: {
       webhook_id: WebhookId,
       name: z.string().min(1).max(80).optional(),
@@ -114,13 +150,21 @@ export const webhookTools: readonly FluxerTool[] = [
       channel_id: ChannelId.optional(),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, ['name', 'avatar', 'channel_id']);
-      const wh = await ctx.rest.patch<Record<string, unknown>>(FluxerRoutes.webhook(args.webhook_id), {
-        body,
-        ...(args.audit_reason ? { reason: args.audit_reason } : {}),
-      });
+      const wh = await ctx.rest.patch<Record<string, unknown>>(
+        FluxerRoutes.webhook(args.webhook_id),
+        {
+          body,
+          ...(args.audit_reason ? { reason: args.audit_reason } : {}),
+        },
+      );
       return dualResult({ text: `Updated webhook \`${args.webhook_id}\`.`, data: wh });
     },
   }),
@@ -128,14 +172,20 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_modify_with_token',
     category: 'webhooks',
-    description: 'Modify a Fluxer webhook using its opaque token (`PATCH /webhooks/{webhook_id}/{token}`).',
+    description:
+      'Modify a Fluxer webhook using its opaque token (`PATCH /webhooks/{webhook_id}/{token}`).',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
       name: z.string().min(1).max(80).optional(),
       avatar: z.string().nullable().optional(),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, ['name', 'avatar']);
       const wh = await ctx.rest.patch<Record<string, unknown>>(
@@ -153,7 +203,12 @@ export const webhookTools: readonly FluxerTool[] = [
     confirmRequired: true,
     description: 'Delete a Fluxer webhook (`DELETE /webhooks/{webhook_id}`). Confirmation-gated.',
     inputSchema: { webhook_id: WebhookId, audit_reason: AuditReasonSchema },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.delete(FluxerRoutes.webhook(args.webhook_id), {
         ...(args.audit_reason ? { reason: args.audit_reason } : {}),
@@ -169,9 +224,15 @@ export const webhookTools: readonly FluxerTool[] = [
     name: 'webhooks_delete_with_token',
     category: 'webhooks',
     confirmRequired: true,
-    description: 'Delete a Fluxer webhook via its opaque token (`DELETE /webhooks/{webhook_id}/{token}`). Confirmation-gated.',
+    description:
+      'Delete a Fluxer webhook via its opaque token (`DELETE /webhooks/{webhook_id}/{token}`). Confirmation-gated.',
     inputSchema: { webhook_id: WebhookId, webhook_token: WebhookTokenSchema },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.delete(FluxerRoutes.webhookWithToken(args.webhook_id, args.webhook_token), {
         auth: false,
@@ -197,12 +258,31 @@ export const webhookTools: readonly FluxerTool[] = [
       avatar_url: z.string().url().optional(),
       tts: z.boolean().optional(),
       thread_id: ChannelId.optional(),
-      thread_name: z.string().max(100).optional().describe('Create a new forum post thread when executing against a forum webhook'),
-      wait: z.boolean().optional().describe('Wait for server confirmation and return message object'),
+      thread_name: z
+        .string()
+        .max(100)
+        .optional()
+        .describe('Create a new forum post thread when executing against a forum webhook'),
+      wait: z
+        .boolean()
+        .optional()
+        .describe('Wait for server confirmation and return message object'),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const body = pickDefined(args, ['content', 'embeds', 'username', 'avatar_url', 'tts', 'thread_name']);
+      const body = pickDefined(args, [
+        'content',
+        'embeds',
+        'username',
+        'avatar_url',
+        'tts',
+        'thread_name',
+      ]);
       const res = await ctx.rest.post<Record<string, unknown> | undefined>(
         FluxerRoutes.webhookWithToken(args.webhook_id, args.webhook_token),
         {
@@ -221,14 +301,20 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_get_message',
     category: 'webhooks',
-    description: 'Fetch a message sent by a Fluxer webhook (`GET /webhooks/{webhook_id}/{token}/messages/{message_id}`).',
+    description:
+      'Fetch a message sent by a Fluxer webhook (`GET /webhooks/{webhook_id}/{token}/messages/{message_id}`).',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
       message_id: MessageId,
       thread_id: ChannelId.optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const msg = await ctx.rest.get<Record<string, unknown>>(
         FluxerRoutes.webhookMessage(args.webhook_id, args.webhook_token, args.message_id),
@@ -241,7 +327,8 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_edit_message',
     category: 'webhooks',
-    description: 'Edit a message previously sent by a Fluxer webhook (`PATCH /webhooks/{webhook_id}/{token}/messages/{message_id}`).',
+    description:
+      'Edit a message previously sent by a Fluxer webhook (`PATCH /webhooks/{webhook_id}/{token}/messages/{message_id}`).',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
@@ -250,7 +337,12 @@ export const webhookTools: readonly FluxerTool[] = [
       embeds: z.array(RichEmbedSchema).max(10).optional(),
       thread_id: ChannelId.optional(),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, ['content', 'embeds']);
       const msg = await ctx.rest.patch<Record<string, unknown>>(
@@ -265,14 +357,20 @@ export const webhookTools: readonly FluxerTool[] = [
     name: 'webhooks_delete_message',
     category: 'webhooks',
     confirmRequired: true,
-    description: 'Delete a message sent by a Fluxer webhook (`DELETE /webhooks/{webhook_id}/{token}/messages/{message_id}`). Confirmation-gated.',
+    description:
+      'Delete a message sent by a Fluxer webhook (`DELETE /webhooks/{webhook_id}/{token}/messages/{message_id}`). Confirmation-gated.',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
       message_id: MessageId,
       thread_id: ChannelId.optional(),
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.delete(
         FluxerRoutes.webhookMessage(args.webhook_id, args.webhook_token, args.message_id),
@@ -289,15 +387,25 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_execute_github',
     category: 'webhooks',
-    description: 'Execute a GitHub-compatible Fluxer webhook (`POST /webhooks/{webhook_id}/{token}/github`).',
+    description:
+      'Execute a GitHub-compatible Fluxer webhook (`POST /webhooks/{webhook_id}/{token}/github`).',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
-      event: z.string().min(1).max(64).describe('X-GitHub-Event header value (e.g. "push", "release", "pull_request")'),
+      event: z
+        .string()
+        .min(1)
+        .max(64)
+        .describe('X-GitHub-Event header value (e.g. "push", "release", "pull_request")'),
       payload: z.record(z.string(), z.unknown()),
       thread_id: ChannelId.optional(),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.post(FluxerRoutes.webhookGithub(args.webhook_id, args.webhook_token), {
         auth: false,
@@ -315,7 +423,8 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_execute_slack',
     category: 'webhooks',
-    description: 'Execute a Slack-compatible Fluxer webhook (`POST /webhooks/{webhook_id}/{token}/slack`).',
+    description:
+      'Execute a Slack-compatible Fluxer webhook (`POST /webhooks/{webhook_id}/{token}/slack`).',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
@@ -325,7 +434,12 @@ export const webhookTools: readonly FluxerTool[] = [
       attachments: z.array(z.record(z.string(), z.unknown())).optional(),
       thread_id: ChannelId.optional(),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, ['text', 'username', 'icon_url', 'attachments']);
       await ctx.rest.post(FluxerRoutes.webhookSlack(args.webhook_id, args.webhook_token), {
@@ -343,13 +457,19 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_execute_instatus',
     category: 'webhooks',
-    description: 'Fluxer-native: execute an Instatus incident/status webhook (`POST /webhooks/{webhook_id}/{token}/instatus`).',
+    description:
+      'Fluxer-native: execute an Instatus incident/status webhook (`POST /webhooks/{webhook_id}/{token}/instatus`).',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
       payload: z.record(z.string(), z.unknown()),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.post(FluxerRoutes.webhookInstatus(args.webhook_id, args.webhook_token), {
         auth: false,
@@ -365,14 +485,20 @@ export const webhookTools: readonly FluxerTool[] = [
   defineTool({
     name: 'webhooks_execute_libredesk',
     category: 'webhooks',
-    description: 'Fluxer-native: execute a Libredesk support-desk webhook (`POST /webhooks/{webhook_id}/{token}/libredesk`).',
+    description:
+      'Fluxer-native: execute a Libredesk support-desk webhook (`POST /webhooks/{webhook_id}/{token}/libredesk`).',
     inputSchema: {
       webhook_id: WebhookId,
       webhook_token: WebhookTokenSchema,
       payload: z.record(z.string(), z.unknown()),
       thread_id: ChannelId.optional(),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.post(FluxerRoutes.webhookLibredesk(args.webhook_id, args.webhook_token), {
         auth: false,

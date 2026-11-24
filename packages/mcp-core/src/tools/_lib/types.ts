@@ -87,10 +87,7 @@ export interface ToolRuntimeContext {
   readonly logger: Logger;
   readonly signal: AbortSignal;
   /** Invoke another registered tool in-process (used by pipeline, workflows, and orchestrators). */
-  readonly invokeTool: (
-    toolName: string,
-    args: Record<string, unknown>,
-  ) => Promise<CallToolResult>;
+  readonly invokeTool: (toolName: string, args: Record<string, unknown>) => Promise<CallToolResult>;
   /** All currently registered tools (used by meta/intent planners). */
   readonly getTools: () => readonly FluxerTool[];
 }

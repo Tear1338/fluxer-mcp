@@ -1,18 +1,18 @@
 import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
 import {
+  buildMessageJumpUrl,
   ChannelId,
+  defineTool,
+  dualResult,
   type FluxerTool,
   GuildId,
   MessageId,
+  pickDefined,
   RichEmbedSchema,
   Snowflake,
   StickerId,
   UserId,
-  buildMessageJumpUrl,
-  defineTool,
-  dualResult,
-  pickDefined,
   wrapUntrusted,
 } from './_lib/types.js';
 
@@ -38,11 +38,17 @@ export const messageTools: readonly FluxerTool[] = [
       'Send a message to a Fluxer channel (`POST /channels/{channel_id}/messages`). Supports text (up to 4000 chars), rich embeds, reply references, allowed_mentions, flags (e.g. SUPPRESS_EMBEDS=4, SUPPRESS_NOTIFICATIONS=4096), sticker_ids, and tts.',
     inputSchema: {
       channel_id: ChannelId,
-      content: z.string().max(4000).optional().describe('Message text (up to 4000 chars on Fluxer)'),
+      content: z
+        .string()
+        .max(4000)
+        .optional()
+        .describe('Message text (up to 4000 chars on Fluxer)'),
       embeds: z.array(RichEmbedSchema).max(10).optional(),
       tts: z.boolean().optional(),
       flags: z.number().int().min(0).optional(),
-      reply_to_message_id: MessageId.optional().describe('Reply to this message ID in the same channel'),
+      reply_to_message_id: MessageId.optional().describe(
+        'Reply to this message ID in the same channel',
+      ),
       sticker_ids: z.array(StickerId).max(3).optional(),
       allowed_mentions: z
         .object({
@@ -61,7 +67,11 @@ export const messageTools: readonly FluxerTool[] = [
       openWorldHint: true,
     },
     handler: async (args, ctx) => {
-      if (!args.content && (!args.embeds || args.embeds.length === 0) && (!args.sticker_ids || args.sticker_ids.length === 0)) {
+      if (
+        !args.content &&
+        (!args.embeds || args.embeds.length === 0) &&
+        (!args.sticker_ids || args.sticker_ids.length === 0)
+      ) {
         throw new Error('Provide at least one of content, embeds, or sticker_ids.');
       }
       const body: Record<string, unknown> = pickDefined(args, [
@@ -109,7 +119,13 @@ export const messageTools: readonly FluxerTool[] = [
       'Read recent messages from a Fluxer channel (`GET /channels/{channel_id}/messages`) with cursor pagination (before/after/around) and untrusted content fencing.',
     inputSchema: {
       channel_id: ChannelId,
-      limit: z.number().int().min(1).max(100).optional().describe('Messages to fetch (1-100, default 25)'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Messages to fetch (1-100, default 25)'),
       before: MessageId.optional(),
       after: MessageId.optional(),
       around: MessageId.optional(),
@@ -157,7 +173,8 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_get',
     category: 'messages',
     requiredPermissions: ['VIEW_CHANNEL', 'READ_MESSAGE_HISTORY'],
-    description: 'Fetch a single Fluxer message by ID (`GET /channels/{channel_id}/messages/{message_id}`).',
+    description:
+      'Fetch a single Fluxer message by ID (`GET /channels/{channel_id}/messages/{message_id}`).',
     inputSchema: { channel_id: ChannelId, message_id: MessageId },
     annotations: {
       readOnlyHint: true,
@@ -180,7 +197,8 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_edit',
     category: 'messages',
     requiredPermissions: ['VIEW_CHANNEL'],
-    description: 'Edit a bot-authored Fluxer message (`PATCH /channels/{channel_id}/messages/{message_id}`).',
+    description:
+      'Edit a bot-authored Fluxer message (`PATCH /channels/{channel_id}/messages/{message_id}`).',
     inputSchema: {
       channel_id: ChannelId,
       message_id: MessageId,
@@ -202,7 +220,11 @@ export const messageTools: readonly FluxerTool[] = [
       );
       return dualResult({
         text: `Edited message \`${args.message_id}\` in channel \`${args.channel_id}\`.`,
-        data: { message_id: msg.id, channel_id: msg.channel_id, edited_timestamp: msg.edited_timestamp ?? null },
+        data: {
+          message_id: msg.id,
+          channel_id: msg.channel_id,
+          edited_timestamp: msg.edited_timestamp ?? null,
+        },
       });
     },
   }),
@@ -212,7 +234,8 @@ export const messageTools: readonly FluxerTool[] = [
     category: 'messages',
     requiredPermissions: ['MANAGE_MESSAGES'],
     confirmRequired: true,
-    description: 'Delete a single message (`DELETE /channels/{channel_id}/messages/{message_id}`). Confirmation-gated.',
+    description:
+      'Delete a single message (`DELETE /channels/{channel_id}/messages/{message_id}`). Confirmation-gated.',
     inputSchema: { channel_id: ChannelId, message_id: MessageId },
     annotations: {
       readOnlyHint: false,
@@ -261,7 +284,8 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_pin',
     category: 'messages',
     requiredPermissions: ['PIN_MESSAGES'],
-    description: 'Pin a message in a Fluxer channel (`PUT /channels/{channel_id}/pins/{message_id}`). Note: Fluxer has a dedicated PIN_MESSAGES permission (bit 51).',
+    description:
+      'Pin a message in a Fluxer channel (`PUT /channels/{channel_id}/pins/{message_id}`). Note: Fluxer has a dedicated PIN_MESSAGES permission (bit 51).',
     inputSchema: { channel_id: ChannelId, message_id: MessageId },
     annotations: {
       readOnlyHint: false,
@@ -282,7 +306,8 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_unpin',
     category: 'messages',
     requiredPermissions: ['PIN_MESSAGES'],
-    description: 'Unpin a message in a Fluxer channel (`DELETE /channels/{channel_id}/pins/{message_id}`).',
+    description:
+      'Unpin a message in a Fluxer channel (`DELETE /channels/{channel_id}/pins/{message_id}`).',
     inputSchema: { channel_id: ChannelId, message_id: MessageId },
     annotations: {
       readOnlyHint: false,
@@ -304,7 +329,7 @@ export const messageTools: readonly FluxerTool[] = [
     category: 'messages',
     requiredPermissions: ['VIEW_CHANNEL', 'READ_MESSAGE_HISTORY'],
     description:
-      'List pinned messages in a Fluxer channel (`GET /channels/{channel_id}/messages/pins`). Returns Fluxer\'s native paginated `{ items, has_more }` structure.',
+      "List pinned messages in a Fluxer channel (`GET /channels/{channel_id}/messages/pins`). Returns Fluxer's native paginated `{ items, has_more }` structure.",
     inputSchema: {
       channel_id: ChannelId,
       limit: z.number().int().min(1).max(50).optional(),
@@ -334,7 +359,8 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_crosspost',
     category: 'messages',
     requiredPermissions: ['SEND_MESSAGES'],
-    description: 'Publish/crosspost an announcement message to following channels (`POST /channels/{channel_id}/messages/{message_id}/crosspost`).',
+    description:
+      'Publish/crosspost an announcement message to following channels (`POST /channels/{channel_id}/messages/{message_id}/crosspost`).',
     inputSchema: { channel_id: ChannelId, message_id: MessageId },
     annotations: {
       readOnlyHint: false,
@@ -381,12 +407,15 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_create_thread',
     category: 'messages',
     requiredPermissions: ['CREATE_PUBLIC_THREADS'],
-    description: 'Start a thread from an existing Fluxer message (`POST /channels/{channel_id}/messages/{message_id}/threads`).',
+    description:
+      'Start a thread from an existing Fluxer message (`POST /channels/{channel_id}/messages/{message_id}/threads`).',
     inputSchema: {
       channel_id: ChannelId,
       message_id: MessageId,
       name: z.string().min(1).max(100),
-      auto_archive_duration: z.union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)]).optional(),
+      auto_archive_duration: z
+        .union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)])
+        .optional(),
       rate_limit_per_user: z.number().int().min(0).max(21600).optional(),
     },
     annotations: {
@@ -432,7 +461,12 @@ export const messageTools: readonly FluxerTool[] = [
       );
       return dualResult({
         text: `Deleted attachment \`${args.attachment_id}\` from message \`${args.message_id}\`.`,
-        data: { deleted: true, channel_id: args.channel_id, message_id: args.message_id, attachment_id: args.attachment_id },
+        data: {
+          deleted: true,
+          channel_id: args.channel_id,
+          message_id: args.message_id,
+          attachment_id: args.attachment_id,
+        },
       });
     },
   }),
@@ -440,7 +474,8 @@ export const messageTools: readonly FluxerTool[] = [
   defineTool({
     name: 'messages_refresh_attachment_urls',
     category: 'messages',
-    description: 'Fluxer-native: refresh expiring signed Fluxer media attachment URLs (`POST /attachments/refresh-urls`).',
+    description:
+      'Fluxer-native: refresh expiring signed Fluxer media attachment URLs (`POST /attachments/refresh-urls`).',
     inputSchema: {
       attachment_urls: z.array(z.string().url()).min(1).max(50),
     },
@@ -517,7 +552,12 @@ export const messageTools: readonly FluxerTool[] = [
       const res = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.searchMessages(), {
         body,
       });
-      const total = typeof res.total === 'number' ? res.total : Array.isArray(res.messages) ? res.messages.length : 0;
+      const total =
+        typeof res.total === 'number'
+          ? res.total
+          : Array.isArray(res.messages)
+            ? res.messages.length
+            : 0;
       return dualResult({
         text: `Fluxer message search returned ${total} match(es).`,
         data: res,
@@ -577,7 +617,13 @@ export const messageTools: readonly FluxerTool[] = [
       'Gather bounded conversation context from a Fluxer channel with explicit Fluxer jump-URL citations, participant list, and untrusted content boundaries.',
     inputSchema: {
       channel_id: ChannelId,
-      limit: z.number().int().min(5).max(100).optional().describe('Messages to include (default 30)'),
+      limit: z
+        .number()
+        .int()
+        .min(5)
+        .max(100)
+        .optional()
+        .describe('Messages to include (default 30)'),
       around: MessageId.optional(),
     },
     annotations: {
@@ -609,7 +655,10 @@ export const messageTools: readonly FluxerTool[] = [
       }));
       const participants = [...new Set(citations.map((c) => c.author_id).filter(Boolean))];
       const transcript = citations
-        .map((c) => `[${c.timestamp ?? ''}] @${c.author_username ?? c.author_id} (${c.jump_url}): ${c.content}`)
+        .map(
+          (c) =>
+            `[${c.timestamp ?? ''}] @${c.author_username ?? c.author_id} (${c.jump_url}): ${c.content}`,
+        )
         .join('\n');
       return dualResult({
         text: `Captured ${citations.length} cited message(s) from ${participants.length} participant(s):\n${wrapUntrusted(transcript, 'message')}`,
@@ -638,7 +687,13 @@ export const messageTools: readonly FluxerTool[] = [
       url: z.string().url().optional(),
       footer: z.string().max(2048).optional(),
       fields: z
-        .array(z.object({ name: z.string().max(256), value: z.string().max(1024), inline: z.boolean().optional() }))
+        .array(
+          z.object({
+            name: z.string().max(256),
+            value: z.string().max(1024),
+            inline: z.boolean().optional(),
+          }),
+        )
         .max(25)
         .optional(),
       embeds: z.array(RichEmbedSchema).max(10).optional(),
@@ -676,7 +731,8 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_publish',
     category: 'messages',
     requiredPermissions: ['VIEW_CHANNEL', 'SEND_MESSAGES', 'EMBED_LINKS'],
-    description: 'Publish a rich composed message (content + embeds + optional allowed_mentions) to a Fluxer channel (`POST /channels/{channel_id}/messages`).',
+    description:
+      'Publish a rich composed message (content + embeds + optional allowed_mentions) to a Fluxer channel (`POST /channels/{channel_id}/messages`).',
     inputSchema: {
       channel_id: ChannelId,
       content: z.string().max(4000).optional(),
@@ -715,7 +771,8 @@ export const messageTools: readonly FluxerTool[] = [
     name: 'messages_update',
     category: 'messages',
     requiredPermissions: ['VIEW_CHANNEL'],
-    description: 'Update an existing rich composed message (content and/or embeds) in a Fluxer channel (`PATCH /channels/{channel_id}/messages/{message_id}`).',
+    description:
+      'Update an existing rich composed message (content and/or embeds) in a Fluxer channel (`PATCH /channels/{channel_id}/messages/{message_id}`).',
     inputSchema: {
       channel_id: ChannelId,
       message_id: MessageId,
@@ -736,7 +793,11 @@ export const messageTools: readonly FluxerTool[] = [
       );
       return dualResult({
         text: `Updated rich message \`${args.message_id}\` in channel \`${args.channel_id}\`.`,
-        data: { message_id: msg.id, channel_id: msg.channel_id, edited_timestamp: msg.edited_timestamp ?? null },
+        data: {
+          message_id: msg.id,
+          channel_id: msg.channel_id,
+          edited_timestamp: msg.edited_timestamp ?? null,
+        },
       });
     },
   }),

@@ -10,16 +10,16 @@ import {
 import {
   AuditReasonSchema,
   ChannelId,
+  defineTool,
+  dualResult,
   EmojiId,
   type FluxerTool,
   GuildId,
   PermissionOverwriteSchema,
   PermissionString,
+  pickDefined,
   Snowflake,
   TagId,
-  defineTool,
-  dualResult,
-  pickDefined,
 } from './_lib/types.js';
 
 const ForumTagInputSchema = z.object({
@@ -93,9 +93,7 @@ export const channelTools: readonly FluxerTool[] = [
       openWorldHint: true,
     },
     handler: async (args, ctx) => {
-      const ch = await ctx.rest.get<Record<string, unknown>>(
-        FluxerRoutes.channel(args.channel_id),
-      );
+      const ch = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.channel(args.channel_id));
       return dualResult({
         text: `Fetched channel **#${String(ch.name ?? args.channel_id)}** (\`channel:${args.channel_id}\`, ${FLUXER_CHANNEL_TYPE_NAMES[Number(ch.type)] ?? String(ch.type)}).`,
         data: {
@@ -118,12 +116,20 @@ export const channelTools: readonly FluxerTool[] = [
       name: z.string().min(1).max(100),
       type: ChannelTypeCreateSchema.optional().describe('Default: 0 (GUILD_TEXT)'),
       topic: z.string().max(1024).optional(),
-      url: z.string().url().max(512).optional().describe('Target URL for Fluxer GUILD_LINK (type 998) channels'),
+      url: z
+        .string()
+        .url()
+        .max(512)
+        .optional()
+        .describe('Target URL for Fluxer GUILD_LINK (type 998) channels'),
       parent_id: ChannelId.nullable().optional().describe('Category channel ID'),
       position: z.number().int().min(0).optional(),
       nsfw: z.boolean().optional(),
       content_warning_level: z
-        .union([z.literal(CONTENT_WARNING_LEVEL.INHERIT), z.literal(CONTENT_WARNING_LEVEL.CONTENT_WARNING)])
+        .union([
+          z.literal(CONTENT_WARNING_LEVEL.INHERIT),
+          z.literal(CONTENT_WARNING_LEVEL.CONTENT_WARNING),
+        ])
         .optional()
         .describe('Fluxer content warning level (0=INHERIT, 1=CONTENT_WARNING)'),
       content_warning_text: z.string().max(200).nullable().optional(),
@@ -134,12 +140,14 @@ export const channelTools: readonly FluxerTool[] = [
       rtc_region: z.string().nullable().optional(),
       rtc_p2p: z.boolean().optional().describe('Fluxer P2P voice toggle'),
       permission_overwrites: z.array(PermissionOverwriteSchema).optional(),
-      default_auto_archive_duration: z.union([
-        z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[0]),
-        z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[1]),
-        z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[2]),
-        z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[3]),
-      ]).optional(),
+      default_auto_archive_duration: z
+        .union([
+          z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[0]),
+          z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[1]),
+          z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[2]),
+          z.literal(THREAD_AUTO_ARCHIVE_DURATIONS[3]),
+        ])
+        .optional(),
       default_thread_rate_limit_per_user: z.number().int().min(0).max(21600).optional(),
       available_tags: z.array(ForumTagInputSchema).max(20).optional(),
       default_reaction_emoji: z
@@ -204,7 +212,10 @@ export const channelTools: readonly FluxerTool[] = [
     inputSchema: {
       channel_id: ChannelId,
       name: z.string().min(1).max(100).optional(),
-      type: z.union([z.literal(0), z.literal(5)]).optional().describe('Convert between GUILD_TEXT (0) and GUILD_ANNOUNCEMENT (5)'),
+      type: z
+        .union([z.literal(0), z.literal(5)])
+        .optional()
+        .describe('Convert between GUILD_TEXT (0) and GUILD_ANNOUNCEMENT (5)'),
       topic: z.string().max(1024).nullable().optional(),
       url: z.string().url().max(512).optional(),
       position: z.number().int().min(0).optional(),
@@ -221,10 +232,17 @@ export const channelTools: readonly FluxerTool[] = [
       archived: z.boolean().optional().describe('Thread only: archive/unarchive'),
       locked: z.boolean().optional().describe('Thread only: lock/unlock'),
       invitable: z.boolean().optional().describe('Private thread only'),
-      auto_archive_duration: z.union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)]).optional(),
-      default_auto_archive_duration: z.union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)]).optional(),
+      auto_archive_duration: z
+        .union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)])
+        .optional(),
+      default_auto_archive_duration: z
+        .union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)])
+        .optional(),
       applied_tags: z.array(TagId).max(5).optional().describe('Forum post applied tag IDs'),
-      default_sort_order: z.union([z.literal(0), z.literal(1)]).nullable().optional(),
+      default_sort_order: z
+        .union([z.literal(0), z.literal(1)])
+        .nullable()
+        .optional(),
       default_forum_layout: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
       audit_reason: AuditReasonSchema,
     },
@@ -309,7 +327,9 @@ export const channelTools: readonly FluxerTool[] = [
       channel_id: ChannelId,
       overwrite_id: Snowflake.describe('Role ID or Member user ID'),
       type: z.union([z.literal(0), z.literal(1)]).describe('0 = role, 1 = member'),
-      allow: PermissionString.optional().describe('Allowed permission bitfield string (default "0")'),
+      allow: PermissionString.optional().describe(
+        'Allowed permission bitfield string (default "0")',
+      ),
       deny: PermissionString.optional().describe('Denied permission bitfield string (default "0")'),
       audit_reason: AuditReasonSchema,
     },
@@ -375,7 +395,8 @@ export const channelTools: readonly FluxerTool[] = [
     name: 'channels_trigger_typing',
     category: 'channels',
     requiredPermissions: ['SEND_MESSAGES'],
-    description: 'Trigger a typing indicator in a Fluxer channel (`POST /channels/{channel_id}/typing`).',
+    description:
+      'Trigger a typing indicator in a Fluxer channel (`POST /channels/{channel_id}/typing`).',
     inputSchema: {
       channel_id: ChannelId,
     },
@@ -428,7 +449,9 @@ export const channelTools: readonly FluxerTool[] = [
       'Follow a Fluxer announcement channel so published messages crosspost into `webhook_channel_id` (`POST /channels/{channel_id}/followers`).',
     inputSchema: {
       channel_id: ChannelId.describe('Source announcement channel ID'),
-      webhook_channel_id: ChannelId.describe('Target text channel ID to receive crossposted announcements'),
+      webhook_channel_id: ChannelId.describe(
+        'Target text channel ID to receive crossposted announcements',
+      ),
     },
     annotations: {
       readOnlyHint: false,
@@ -483,7 +506,10 @@ export const channelTools: readonly FluxerTool[] = [
     inputSchema: {
       channel_id: ChannelId,
       name: z.string().min(1).max(50),
-      moderated: z.boolean().optional().describe('Restrict tag application to moderators (MANAGE_THREADS)'),
+      moderated: z
+        .boolean()
+        .optional()
+        .describe('Restrict tag application to moderators (MANAGE_THREADS)'),
       emoji_id: EmojiId.nullable().optional(),
       emoji_name: z.string().max(64).nullable().optional(),
     },
@@ -602,8 +628,13 @@ export const channelTools: readonly FluxerTool[] = [
     inputSchema: {
       channel_id: ChannelId,
       name: z.string().min(1).max(100),
-      type: z.union([z.literal(10), z.literal(11), z.literal(12)]).optional().describe('Thread type (11=PUBLIC_THREAD, 12=PRIVATE_THREAD)'),
-      auto_archive_duration: z.union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)]).optional(),
+      type: z
+        .union([z.literal(10), z.literal(11), z.literal(12)])
+        .optional()
+        .describe('Thread type (11=PUBLIC_THREAD, 12=PRIVATE_THREAD)'),
+      auto_archive_duration: z
+        .union([z.literal(60), z.literal(1440), z.literal(4320), z.literal(10080)])
+        .optional(),
       rate_limit_per_user: z.number().int().min(0).max(21600).optional(),
       invitable: z.boolean().optional(),
       applied_tags: z.array(TagId).max(5).optional(),
@@ -647,7 +678,8 @@ export const channelTools: readonly FluxerTool[] = [
     name: 'channels_list_active_threads_guild',
     category: 'channels',
     guildScoped: true,
-    description: 'List all active threads in a Fluxer guild (`GET /guilds/{guild_id}/threads/active`).',
+    description:
+      'List all active threads in a Fluxer guild (`GET /guilds/{guild_id}/threads/active`).',
     inputSchema: {
       guild_id: GuildId,
     },

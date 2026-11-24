@@ -3,10 +3,10 @@ import { FluxerRoutes } from '../fluxer/constants.js';
 import {
   AuditReasonSchema,
   ChannelId,
-  type FluxerTool,
-  GuildId,
   defineTool,
   dualResult,
+  type FluxerTool,
+  GuildId,
   pickDefined,
 } from './_lib/types.js';
 
@@ -23,7 +23,8 @@ export const inviteTools: readonly FluxerTool[] = [
     name: 'invites_list_channel',
     category: 'invites',
     requiredPermissions: ['MANAGE_CHANNELS'],
-    description: 'List active invites targeting a specific Fluxer channel (`GET /channels/{channel_id}/invites`).',
+    description:
+      'List active invites targeting a specific Fluxer channel (`GET /channels/{channel_id}/invites`).',
     inputSchema: {
       channel_id: ChannelId,
     },
@@ -122,7 +123,8 @@ export const inviteTools: readonly FluxerTool[] = [
   defineTool({
     name: 'invites_get',
     category: 'invites',
-    description: 'Inspect a Fluxer invite by code (`GET /invites/{invite_code}`), including guild, channel, inviter, and member/presence counts.',
+    description:
+      'Inspect a Fluxer invite by code (`GET /invites/{invite_code}`), including guild, channel, inviter, and member/presence counts.',
     inputSchema: {
       invite_code: InviteCodeSchema,
     },
@@ -148,7 +150,8 @@ export const inviteTools: readonly FluxerTool[] = [
     category: 'invites',
     requiredPermissions: ['MANAGE_CHANNELS'],
     confirmRequired: true,
-    description: 'Revoke/delete a Fluxer invite (`DELETE /invites/{invite_code}`). Confirmation-gated.',
+    description:
+      'Revoke/delete a Fluxer invite (`DELETE /invites/{invite_code}`). Confirmation-gated.',
     inputSchema: {
       invite_code: InviteCodeSchema,
       audit_reason: AuditReasonSchema,

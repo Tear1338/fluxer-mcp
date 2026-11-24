@@ -1,28 +1,32 @@
-# Contributing
+# Contributing to Fluxer MCP
 
-Contributions that improve safe, reliable, caller-owned Discord operations are
-welcome.
+Thank you for contributing to **Fluxer MCP**!
 
-Use Node.js 24 and pnpm 9.15.0 for full workspace development, including the
-documentation site. The published core and CLI still support Node.js 22.12;
-CI checks them on both Node.js 22.12 and 24.
+## Development Setup
 
-Before opening a pull request:
+Requirements: **Node.js 22.13+** and **pnpm 9.15+**.
 
-1. Keep the change focused and explain the behavior it changes.
-2. Add or update tests for externally observable behavior.
-3. Run the smallest relevant test command, then the affected package's
-   typecheck.
-4. Disclose third-party code, assets, generated material, and their licenses.
-5. Confirm that you have the right to submit the change under Apache-2.0.
+```bash
+pnpm install
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm catalog:check
+```
 
-By intentionally submitting a contribution for inclusion in discord-mcp, you
-license it under the [Apache License 2.0](LICENSE), without additional terms or
-conditions, unless you explicitly state otherwise and a maintainer accepts
-those terms in writing. This follows Section 5 of the project license.
+## Contribution Rules
 
-If an employer or another legal entity owns the contribution, obtain its
-authorization before submitting it. Do not submit material whose license is
-incompatible with Apache-2.0.
+1. **Verify every Fluxer endpoint against the official OpenAPI specification** (`https://api.fluxer.app/v1/openapi.json`) or [`fluxerapp/fluxer`](https://github.com/fluxerapp/fluxer). Never invent endpoints or assume Discord API parity.
+2. **Strict TypeScript**: Code must pass `pnpm typecheck` (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`).
+3. **Formatting & Linting**: Run `pnpm format` and `pnpm lint` (Biome).
+4. **Safety First**:
+   - Destructive tools MUST declare `confirmRequired: true` and `annotations.destructiveHint: true`.
+   - Never log tokens, authorization headers, or webhook secrets.
+   - Never disable TLS verification.
+5. **Tests Required**: Add unit tests and MSW integration tests in `packages/mcp-core` or `packages/mcp-server` for every new or modified tool.
+6. **Keep Documentation Updated**: Update `PARITY.md` and regenerate `docs/TOOLS.md` whenever tools are added or changed.
 
-The pull-request template includes a confirmation of these contribution terms.
+## License
+
+Contributions are licensed under the **Apache License 2.0** ([LICENSE](LICENSE)).

@@ -1,45 +1,50 @@
 # syntax=docker/dockerfile:1
 
-# This image intentionally starts the credential-free catalog command so MCP
-# registries can inspect the real tool contracts without a Discord bot token.
-# Operational callers should use the npm package, or override CMD with `serve`
-# and provide their own DISCORD_TOKEN.
-FROM node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436 AS build
+# Production multi-stage image for Fluxer MCP.
+# Defaults to credential-free `catalog` mode for safe registry inspection.
+# For live operation, override CMD with `serve` (stdio) or `serve --http --host 0.0.0.0 --port 3000`
+# and provide FLUXER_TOKEN (and FLUXER_API_URL for self-hosted instances).
+FROM node:22-bookworm-slim AS build
 
 WORKDIR /workspace
 
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json turbo.json ./
 COPY packages/mcp-core/package.json packages/mcp-core/package.json
 COPY packages/mcp-server/package.json packages/mcp-server/package.json
 COPY packages/mcp-server-mocks/package.json packages/mcp-server-mocks/package.json
 
-RUN pnpm install --frozen-lockfile --filter @discord-mcp/cli...
+RUN pnpm install --frozen-lockfile --filter @fluxer-mcp/cli...
 
-COPY LICENSE README.md ./
+COPY LICENSE NOTICE README.md ./
 COPY packages/mcp-core packages/mcp-core
 COPY packages/mcp-server packages/mcp-server
 
-RUN pnpm --filter @discord-mcp/core build \
- && pnpm --filter @discord-mcp/cli build \
- && pnpm deploy --filter @discord-mcp/cli --prod /runtime
+RUN pnpm --filter @fluxer-mcp/core build \
+ && pnpm --filter @fluxer-mcp/cli build \
+ && pnpm deploy --filter @fluxer-mcp/cli --prod /runtime
 
-FROM node:22-bookworm-slim@sha256:d649c27dae7ba0137b3cef5dd75baa422c08dc3d9e3fc0c23dfb172dc3cc6436 AS runtime
+FROM node:22-bookworm-slim AS runtime
 
 ENV NODE_ENV=production
+ENV MCP_STATE_DIR=/data/state
 WORKDIR /app
 
-LABEL org.opencontainers.image.title="Discord MCP catalog" \
-      org.opencontainers.image.description="Credential-free schema catalog for MCP registry inspection; Discord execution is disabled by default." \
-      org.opencontainers.image.source="https://github.com/cappyeo/discord-mcp" \
-      org.opencontainers.image.documentation="https://cappyeo.github.io/discord-mcp/" \
+LABEL org.opencontainers.image.title="Fluxer MCP" \
+      org.opencontainers.image.description="Native Model Context Protocol server for Fluxer Cloud and self-hosted communities." \
+      org.opencontainers.image.source="https://github.com/fluxer-mcp/fluxer-mcp" \
       org.opencontainers.image.licenses="Apache-2.0"
 
+RUN mkdir -p /data/state && chown -R node:node /data
+
 COPY --from=build --chown=node:node /runtime/ ./
-COPY --from=build --chown=node:node /workspace/LICENSE /licenses/discord-mcp/LICENSE
+COPY --from=build --chown=node:node /workspace/LICENSE /licenses/fluxer-mcp/LICENSE
+COPY --from=build --chown=node:node /workspace/NOTICE /licenses/fluxer-mcp/NOTICE
 
 USER node
+
+EXPOSE 3000
 
 ENTRYPOINT ["node", "dist/cli.js"]
 CMD ["catalog"]

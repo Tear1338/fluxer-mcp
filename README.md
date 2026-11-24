@@ -1,115 +1,241 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/discord-mcp-banner.jpg" alt="Discord MCP - connect Discord to the Model Context Protocol" width="1200" />
-</p>
+# Fluxer MCP
 
-<h1 align="center">Discord MCP</h1>
+**The native Model Context Protocol (MCP) server for [Fluxer](https://fluxer.com/) — Cloud & Self-Hosted.**
 
-**An open-source Model Context Protocol (MCP) server for Discord.** Connect Claude, Codex, Cursor, and other MCP-compatible AI clients to your own Discord bot. Manage messages, channels, roles, moderation, and server setup through 222 typed tools.
+Connect **Claude Code**, **Claude Desktop**, **OpenAI Codex**, **Cursor**, **VS Code**, **Windsurf**, **Cline**, **Roo Code**, **Zed**, or any MCP-compatible AI client directly to your Fluxer bot. Create, architect, administer, moderate, audit, back up, clone, and secure entire Fluxer communities through **172 strictly typed, Fluxer-native tools**.
 
-[![CI status](https://github.com/cappyeo/discord-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/cappyeo/discord-mcp/actions/workflows/ci.yml) [![npm version](https://img.shields.io/npm/v/%40discord-mcp%2Fcli?label=npm)](https://www.npmjs.com/package/@discord-mcp/cli) [![Required Node.js version](https://img.shields.io/node/v/%40discord-mcp%2Fcli)](https://www.npmjs.com/package/@discord-mcp/cli) [![Apache-2.0 license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Apache-2.0 License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Node.js >= 22.13](https://img.shields.io/badge/node-%3E%3D22.13-brightgreen)](https://nodejs.org/)
+[![Fluxer API v1](https://img.shields.io/badge/Fluxer%20API-v1%20Native-4641d9)](https://docs.fluxer.com/)
 
-<p align="center">
-  <a href="https://cappyeo.github.io/discord-mcp/start/"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/button-get-started.svg" alt="Get started" width="184" height="48" /></a>
-  <a href="https://cappyeo.github.io/discord-mcp/tools/"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/button-browse-tools.svg" alt="Browse tools" width="184" height="48" /></a>
-  <a href="https://cappyeo.github.io/discord-mcp/showcase/live-gaming-server/"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/button-watch-demo.svg" alt="Watch live demo" width="184" height="48" /></a>
-</p>
+---
 
-<h2 align="center"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/section-demo.svg" alt="Live demo" width="720" /></h2>
+## Why Fluxer MCP?
 
-<p align="center">
-  <a href="https://cappyeo.github.io/discord-mcp/showcase/live-gaming-server/">
-    <img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/site/public/demo/live-gaming-server-build.webp" alt="Discord gaming-server onboarding and final verification, built live through discord-mcp" width="960" />
-  </a>
-</p>
+Fluxer MCP is **not** a thin Discord find-and-replace wrapper. Every route, schema, permission bit, channel type, audit-log action, gateway frame, and error code was verified against the live **Fluxer API v1 OpenAPI 3.1.0** specification and [`fluxerapp/fluxer`](https://github.com/fluxerapp/fluxer):
 
-Watch an AI agent build a gaming community: channels, roles, onboarding, AutoMod, and final verification. [Play the 87-second video](https://cappyeo.github.io/discord-mcp/showcase/live-gaming-server/) · [Download MP4](https://cappyeo.github.io/discord-mcp/demo/live-gaming-server-build.mp4).
+- **100% Native Fluxer API v1**: Zero Discord runtime dependencies. Supports Fluxer-exclusive features including `/.well-known/fluxer` instance discovery, `GUILD_LINK (998)` channels, role `hoist_position` ordering, temporary bans (`ban_duration_seconds`), `timeout_reason`, bot-accessible full-text message search (`POST /search/messages`), `POST /members-search`, forum tag CRUD, Guild Discovery management, bulk/clone emojis & stickers, Instatus & Libredesk webhooks, and Fluxer's exact 37+4 permission bitfield (`PIN_MESSAGES`, `BYPASS_SLOWMODE`, `UPDATE_RTC_REGION`, `VIEW_CHANNEL_MEMBERS`).
+- **Cloud & Self-Hosted First**: Configure any `FLUXER_API_URL`, auto-discover capabilities via `/.well-known/fluxer`, and load private PEM CA bundles via `FLUXER_CA_CERT_PATH` — **TLS verification is never disabled by default**.
+- **AI Community Architect**: Describe a community in plain English or French → get a safe dry-run plan (`guild_blueprint_plan`), review roles, channels, overwrites, forum tags, and starter posts, then apply idempotently (`guild_blueprint_apply`) and verify live state (`guild_blueprint_evidence`).
+- **Security, Anti-Raid, Backup & Restore**: Built-in `guild_security_audit` (0–100 score + findings), `roles_analyze_hierarchy`, reversible `guild_raid_shield` lockdown, signed `guild_backup_export`, `guild_config_diff`, `guild_clone_plan`, and bounded `guild_change_plan` / `apply` / `restore`.
+- **Enterprise-Grade Safety**: `MCP_WRITE_MODE=preview`, `MCP_DRY_RUN=true` + `__confirm: true` for destructive operations, `ALLOWED_GUILDS` enforcement, `FLUXER_EXPECTED_BOT_ID` identity lock, Cockatiel retry/circuit-breaker/bulkhead resilience, and automatic secret redaction in logs and audit trails.
 
-<h2 align="center"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/section-capabilities.svg" alt="What can it do?" width="720" /></h2>
+---
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/discord-mcp-workflow.jpg" alt="AI clients connect to Discord through Discord MCP, with typed tools, safety controls, and observability." width="1200" />
-</p>
+## Quick Start (2 Minutes)
 
-| You want to… | Discord MCP provides |
-| --- | --- |
-| Run a community | Messages, threads, forums, roles, events, polls, and onboarding |
-| Moderate a server | Permission checks, role audits, bans, and AutoMod |
-| Build a server from a prompt | A blueprint to preview and approve, resumable execution, and final Discord readback |
-| Extend your bot | Slash commands, interactions, webhooks, and application emojis |
-| Improve an existing server | Preview bounded edits, inspect member access, preserve IDs, resume, and restore selected configuration changes |
-| Read a conversation with sources | Gather bounded channel/thread history and replies with Discord citations and explicit coverage |
-| Run a background workflow | Start a durable sequence, inspect progress, cancel cooperatively, and resume after reviewing checkpoints |
+Requires **Node.js 22.13+** and a Fluxer bot token.
 
-For a complete server build, <a href="https://cappyeo.github.io/discord-mcp/start/activity-evidence/"><strong>Get a verified result</strong></a>: review the plan, approve it, then inspect Activity Evidence from the final readback.
-
-<h2 align="center"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/section-quick-start.svg" alt="Quick start" width="720" /></h2>
-
-Requires **Node.js 22.12+** and [your own Discord bot](https://cappyeo.github.io/discord-mcp/start/create-discord-bot/) installed in a server you control. Works on Windows, macOS, and Linux.
+### 1. Install
 
 ```bash
-npm install -g @discord-mcp/cli
+npm install -g @fluxer-mcp/cli
 ```
 
-Set the bot token in your terminal:
+Or run directly without installing globally:
+
+```bash
+npx -y @fluxer-mcp/cli catalog --check
+```
+
+### 2. Set your Fluxer bot token
 
 ```bash
 # macOS / Linux
-export DISCORD_TOKEN="Bot YOUR_DISCORD_BOT_TOKEN"
+export FLUXER_TOKEN="YOUR_FLUXER_BOT_TOKEN"
 ```
 
 ```powershell
 # Windows PowerShell
-$env:DISCORD_TOKEN = "Bot YOUR_DISCORD_BOT_TOKEN"
+$env:FLUXER_TOKEN = "YOUR_FLUXER_BOT_TOKEN"
 ```
 
-Generate a client configuration and verify the connection (Codex example):
+*(For a self-hosted Fluxer instance, also set `FLUXER_API_URL="https://your-fluxer.example.com/api"`.)*
+
+### 3. Verify connectivity
 
 ```bash
-discord-mcp setup --profile devbot --client codex
-discord-mcp doctor --profile devbot --online
-discord-mcp smoke --profile devbot
+fluxer-mcp doctor --online
+fluxer-mcp smoke
 ```
 
-`setup` verifies your bot, selects a server boundary, and saves a non-secret profile. **Apply the generated configuration to your AI client**; setup does not edit it for you. Launch the client with `DISCORD_TOKEN` available in its environment. The smoke check above does not change Discord.
+### 4. Connect your AI client
 
-See [client setup](https://cappyeo.github.io/discord-mcp/start/client-setup/) for Claude, Codex, Cursor, VS Code/GitHub Copilot, Windsurf, Cline, Roo Code, Continue, Zed, OpenCode, Devin Local, and other clients, plus desktop-app token setup. New to MCP? <a href="https://cappyeo.github.io/discord-mcp/start/"><strong>Get started</strong></a> with the complete tutorial.
-
-<h2 align="center"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/section-safety.svg" alt="Safety and deployment" width="720" /></h2>
-
-- **Your bot, your permissions.** Guild and tool-category allowlists constrain access. Keep bot tokens out of client config files and source control.
-- **Preview first.** Guided `setup` defaults to `MCP_WRITE_MODE=preview`, which blocks all mutations. Direct `serve` defaults to allowing ordinary writes; `MCP_DRY_RUN` covers only confirmation-gated destructive tools. See [safety controls](https://cappyeo.github.io/discord-mcp/reference/config/safety/) before enabling writes.
-- **Local by default.** Run over stdio, or self-host a bearer-protected Streamable HTTP endpoint behind HTTPS. See [remote MCP setup](https://cappyeo.github.io/discord-mcp/operations/openai/).
-- **Optional DM and mention events.** From v0.33.0, deliver authorized text messages to an MCP Events subscriber, with durable delivery and event-bound replies. The separate worker supports Linux/macOS. See [message Events](https://cappyeo.github.io/discord-mcp/operations/message-events/).
-
-<h2 align="center"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/section-docs.svg" alt="Documentation" width="720" /></h2>
-
-| Next step | Guide |
-| --- | --- |
-| Find a tool or workflow | [Tool reference](https://cappyeo.github.io/discord-mcp/tools/) · [Recipes](https://cappyeo.github.io/discord-mcp/recipes/) |
-| Configure and operate | [Configuration](https://cappyeo.github.io/discord-mcp/operations/configure/) · [CLI commands](https://cappyeo.github.io/discord-mcp/reference/cli/) |
-| Build or migrate a server | [Blueprint workflow](https://cappyeo.github.io/discord-mcp/operations/blueprints/) · [Migration guides](https://cappyeo.github.io/discord-mcp/migrate/) |
-| Improve an existing server | [Change plans and member access](https://cappyeo.github.io/discord-mcp/operations/server-changes/) |
-| Read conversations or run background work | [Cited context](https://cappyeo.github.io/discord-mcp/operations/conversation-context/) · [Durable workflows](https://cappyeo.github.io/discord-mcp/operations/workflows/) |
-| Build an integration | [Architecture](https://cappyeo.github.io/discord-mcp/architecture/) · [@discord-mcp/core](https://www.npmjs.com/package/@discord-mcp/core) |
-
-<details>
-<summary>Inspect the tool catalog without a bot token</summary>
+Generate ready-to-use configuration for your preferred client:
 
 ```bash
-discord-mcp catalog --check
-discord-mcp catalog --check --json
+# Claude Code
+fluxer-mcp init --client claude-code --allowed-guilds 999000999000999000
+
+# OpenAI Codex (~/.codex/config.toml)
+fluxer-mcp init --client codex --allowed-guilds 999000999000999000
+
+# Claude Desktop / Cursor / VS Code / Windsurf / Cline / Roo Code / Zed / OpenCode
+fluxer-mcp init --client claude-desktop
+fluxer-mcp init --client cursor
+fluxer-mcp init --client vscode
 ```
 
-Validates the real local MCP catalog with no token, no Discord or other network request, and no Discord write. This is not Activity Evidence and does not verify a live connection. Continue with [setup](https://cappyeo.github.io/discord-mcp/start/) to use your bot. See the [catalog contract](https://cappyeo.github.io/discord-mcp/start/installation/#optional-catalog-check) for JSON output. The Docker image defaults to catalog-only mode; bot operations require `serve` and your own credentials.
+Or create a saved non-secret profile with preview-first defaults:
 
-</details>
+```bash
+fluxer-mcp setup --profile prod --client claude-code --allowed-guilds 999000999000999000
+```
 
-<h2 align="center"><img src="https://raw.githubusercontent.com/cappyeo/discord-mcp/main/.github/assets/readme/section-community.svg" alt="Project and community" width="720" /></h2>
+---
 
-**Pre-1.0.** Check [releases](https://github.com/cappyeo/discord-mcp/releases) and [v1.0 readiness](https://cappyeo.github.io/discord-mcp/reference/v1-readiness/) for current stability commitments.
+## AI Client Configuration Examples
 
-Ask questions in [Discussions](https://github.com/cappyeo/discord-mcp/discussions), share a voluntary [outcome report](https://github.com/cappyeo/discord-mcp/issues/new?template=verified-outcome.yml), or follow the [external documentation review](https://cappyeo.github.io/discord-mcp/reference/external-documentation-review/) and [submit feedback](https://github.com/cappyeo/discord-mcp/issues/new?template=documentation-review.yml). Never include a bot token, client configuration, private Discord data, or unredacted logs. Report vulnerabilities [privately](https://github.com/cappyeo/discord-mcp/security/advisories/new).
+### Claude Code
 
-To develop the full workspace locally, use Node.js 24 and run `pnpm install`, `pnpm build`, then `pnpm test`. See [Contributing](CONTRIBUTING.md); use [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to inspect tool discovery.
+```bash
+claude mcp add fluxer -e FLUXER_TOKEN="$FLUXER_TOKEN" -- npx -y @fluxer-mcp/cli serve
+```
 
-Licensed under [Apache-2.0](LICENSE). Earlier releases retain their included licenses. The [Acceptable Use Policy](ACCEPTABLE-USE.md) governs community participation and support without changing the software license.
+### OpenAI Codex (`~/.codex/config.toml`)
+
+```toml
+[mcp_servers.fluxer]
+command = "npx"
+args = ["-y", "@fluxer-mcp/cli", "serve"]
+
+[mcp_servers.fluxer.env]
+FLUXER_TOKEN = "${FLUXER_TOKEN}"
+MCP_TOOL_SURFACE = "progressive"
+```
+
+### Claude Desktop / Cursor (`mcp.json`)
+
+```json
+{
+  "mcpServers": {
+    "fluxer": {
+      "command": "npx",
+      "args": ["-y", "@fluxer-mcp/cli", "serve"],
+      "env": {
+        "FLUXER_TOKEN": "${FLUXER_TOKEN}",
+        "ALLOWED_GUILDS": "999000999000999000",
+        "MCP_DRY_RUN": "true"
+      }
+    }
+  }
+}
+```
+
+### Self-Hosted Fluxer Instance
+
+```json
+{
+  "mcpServers": {
+    "fluxer": {
+      "command": "npx",
+      "args": ["-y", "@fluxer-mcp/cli", "serve"],
+      "env": {
+        "FLUXER_TOKEN": "${FLUXER_TOKEN}",
+        "FLUXER_API_URL": "https://chat.mycompany.example/api",
+        "FLUXER_CA_CERT_PATH": "/etc/ssl/certs/company-ca.pem"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Docker & Remote Streamable HTTP
+
+Run Fluxer MCP as a bearer-authenticated remote Streamable HTTP server (`/mcp` and `/healthz`):
+
+```bash
+export FLUXER_TOKEN="YOUR_FLUXER_BOT_TOKEN"
+export FLUXER_MCP_ACCESS_TOKEN="$(openssl rand -hex 32)"
+docker compose up -d --build
+```
+
+Verify health:
+
+```bash
+curl -H "Authorization: Bearer $FLUXER_MCP_ACCESS_TOKEN" http://127.0.0.1:3000/healthz
+```
+
+---
+
+## Tool Catalog Overview (172 Tools across 20 Categories)
+
+| Category | Tools | Highlights |
+| --- | ---: | --- |
+| `instance` | 3 | `/.well-known/fluxer` discovery, instance badges, gateway info |
+| `application` | 2 | Current bot app metadata, public application lookup |
+| `guild` | 19 | Settings, vanity URL, channel positions, **Blueprints** (compile/plan/apply/evidence), **Change Plan/Apply/Restore**, **Security Audit**, **Raid Shield**, **Backup Export**, **Config Diff**, **Clone Plan** |
+| `channels` | 21 | CRUD, overwrites, `GUILD_LINK (998)`, slowmode state, follower stats, **Forum Tag CRUD**, forum post data, thread search & archives |
+| `threads` | 6 | Join, leave, add/remove/get/list thread members |
+| `roles` | 8 | CRUD, positions, Fluxer **hoist positions**, **Role Hierarchy Analyzer** |
+| `permissions` | 3 | Channel role audit, member permission trace (`permissions_explain`), guild-wide member access report |
+| `members` | 18 | List, get, Fluxer `POST /members-search`, role assign/bulk-assign/bulk-remove, kick, **temp bans (`ban_duration_seconds`)**, bulk ban, unban, **timeout (`timeout_reason`)**, **voice moderation** |
+| `messages` | 20 | Send (up to 4000 chars + embeds), read, edit, delete, bulk delete, pins, crosspost + source, attachment delete/refresh, **Fluxer full-text search**, cited context, rich composer |
+| `reactions` | 6 | Add, remove own/user/emoji/all, list reactors |
+| `invites` | 5 | Channel & guild invites list, create, inspect, delete |
+| `emojis` | 8 | List, create, **bulk create**, **clone**, modify, delete, metadata, source |
+| `stickers` | 8 | List, create, **bulk create**, **clone**, modify, delete, metadata, source |
+| `discovery` | 6 | Categories, search discoverable guilds, status, apply, update, withdraw |
+| `webhooks` | 17 | Full CRUD + execute + message edit/delete + GitHub, Slack, **Instatus**, **Libredesk** |
+| `audit_log` | 2 | Filtered audit logs (all 38 Fluxer action types) + anomaly summary |
+| `users` | 8 | Current user, profile lookup, guild list, leave guild, DM channels |
+| `intelligence` | 5 | Channel summary, message classification, entity extraction, **heuristic spam/scam/raid moderation**, reply drafting |
+| `inspiration` | 1 | Read-only emoji.gg search |
+| `meta` | 6 | Intent planner, multi-step `mcp_pipeline`, durable `workflow_start/status/resume/cancel` |
+
+See the complete tool reference in [docs/TOOLS.md](docs/TOOLS.md) and the full Discord MCP compatibility matrix in [PARITY.md](PARITY.md).
+
+---
+
+## Safety Controls
+
+| Environment Variable | Default | Purpose |
+| --- | --- | --- |
+| `FLUXER_TOKEN` | *(required)* | Fluxer bot token (never logged or written to profiles) |
+| `FLUXER_API_URL` | `https://api.fluxer.app` | Base URL for Fluxer Cloud or self-hosted instance |
+| `FLUXER_CA_CERT_PATH` | *(unset)* | Optional PEM CA file for private TLS CAs (TLS verification always stays on) |
+| `ALLOWED_GUILDS` | *(unset)* | Comma-separated guild IDs the bot may access |
+| `FLUXER_DEFAULT_GUILD_ID` | *(unset)* | Optional default guild ID when omitted by the AI |
+| `FLUXER_EXPECTED_BOT_ID` | *(unset)* | Identity lock verified against `GET /users/@me` |
+| `MCP_WRITE_MODE` | `allow` | Set `preview` to block ALL mutating calls with a preview |
+| `MCP_DRY_RUN` | `true` | Blocks destructive tools unless set to `false` AND `__confirm: true` is passed |
+| `MCP_TOOL_SURFACE` | `full` | `full` (all 172 tools) or `progressive` (compact search + risk dispatchers) |
+| `MCP_CATEGORIES` | *(all)* | Comma-separated tool category allowlist (`meta` & `instance` stay reachable) |
+| `MCP_DM_CONSENT_MODE` | `advisory` | Set `require` to demand `__confirm: true` before opening a DM |
+
+---
+
+## Documentation
+
+- [Getting Started & Creating a Fluxer Bot](docs/GETTING-STARTED.md)
+- [Permissions Guide](docs/PERMISSIONS.md)
+- [Self-Hosted Fluxer & TLS Guide](docs/SELF-HOSTED.md)
+- [Docker & Remote HTTP Deployment](docs/DOCKER.md)
+- [Complete Tool Reference](docs/TOOLS.md)
+- [Usage Examples & Prompts](docs/EXAMPLES.md)
+- [Known Limitations & Discord Parity](PARITY.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Contributing](CONTRIBUTING.md) · [Security Policy](SECURITY.md)
+
+---
+
+## Local Development
+
+```bash
+pnpm install
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm catalog:check
+```
+
+---
+
+## License & Credits
+
+Licensed under the **Apache License 2.0** ([LICENSE](LICENSE)).
+
+Fluxer MCP originated as a fork of [cappyeo/discord-mcp](https://github.com/cappyeo/discord-mcp) and retains full upstream license notices and attribution in [NOTICE](NOTICE). Built natively for [Fluxer](https://fluxer.com/) using [`@fluxerjs/rest`](https://fluxer.js.org/) and [`@fluxerjs/types`](https://fluxer.js.org/).

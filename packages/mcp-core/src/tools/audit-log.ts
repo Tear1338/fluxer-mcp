@@ -1,15 +1,12 @@
 import { z } from 'zod';
+import { AUDIT_LOG_ACTION_NAMES, FluxerRoutes } from '../fluxer/constants.js';
 import {
-  AUDIT_LOG_ACTION_NAMES,
-  FluxerRoutes,
-} from '../fluxer/constants.js';
-import {
+  defineTool,
+  dualResult,
   type FluxerTool,
   GuildId,
   Snowflake,
   UserId,
-  defineTool,
-  dualResult,
   wrapUntrusted,
 } from './_lib/types.js';
 
@@ -47,10 +44,18 @@ export const auditLogTools: readonly FluxerTool[] = [
         .min(1)
         .max(200)
         .optional()
-        .describe('Numeric Fluxer AuditLogActionType filter (e.g. 22=MEMBER_BAN_ADD, 30=ROLE_CREATE)'),
+        .describe(
+          'Numeric Fluxer AuditLogActionType filter (e.g. 22=MEMBER_BAN_ADD, 30=ROLE_CREATE)',
+        ),
       before: Snowflake.optional().describe('Return entries before this audit log entry ID'),
       after: Snowflake.optional().describe('Return entries after this audit log entry ID'),
-      limit: z.number().int().min(1).max(100).optional().describe('Max entries to return (1-100, default 50)'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe('Max entries to return (1-100, default 50)'),
     },
     annotations: {
       readOnlyHint: true,
@@ -105,7 +110,13 @@ export const auditLogTools: readonly FluxerTool[] = [
       'Aggregate recent guild audit logs into an operational security & moderation summary: counts by action type, top moderators/actors, recent bans/kicks/role-permission changes, and anomaly flags (mass bans, mass channel/role deletions, webhook creations).',
     inputSchema: {
       guild_id: GuildId,
-      limit: z.number().int().min(10).max(100).optional().describe('Number of recent entries to analyze (default 100)'),
+      limit: z
+        .number()
+        .int()
+        .min(10)
+        .max(100)
+        .optional()
+        .describe('Number of recent entries to analyze (default 100)'),
     },
     annotations: {
       readOnlyHint: true,
@@ -151,7 +162,9 @@ export const auditLogTools: readonly FluxerTool[] = [
         anomalies.push(`Unusual role deletion spike: ${roleDeleteCount} roles deleted.`);
       }
       if (webhookCreateCount >= 5) {
-        anomalies.push(`Multiple webhooks created recently (${webhookCreateCount}); audit webhook permissions.`);
+        anomalies.push(
+          `Multiple webhooks created recently (${webhookCreateCount}); audit webhook permissions.`,
+        );
       }
 
       const topActors = Object.entries(byActor)

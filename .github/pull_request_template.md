@@ -1,11 +1,12 @@
 ## Summary
 
-Describe the focused change and why it is needed.
+- Describe what changed and why.
 
 ## Verification
 
-List the commands or evidence used to verify the change.
-
-## Contribution terms
-
-- [ ] I have the right to submit this change under the Apache License 2.0.
+- [ ] `pnpm lint` passes with 0 errors
+- [ ] `pnpm typecheck` passes
+- [ ] `pnpm build` passes
+- [ ] `pnpm test` passes
+- [ ] `pnpm catalog:check` passes
+- [ ] Any new Fluxer endpoint was verified against the live Fluxer OpenAPI specification

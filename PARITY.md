@@ -35,13 +35,13 @@ This document tracks the individual analysis and porting status of every single 
 | `roles` | 5 | 5 | 0 | 3 | **8** |
 | `soundboard` | 7 | 0 | 7 | 0 | **0** *(documented)* |
 | `stage_instances` | 4 | 0 | 4 | 0 | **0** *(documented)* |
-| `stickers` | 7 | 5 | 2 | 4 | **9** |
+| `stickers` | 7 | 5 | 2 | 3 | **8** |
 | `templates` | 9 | 0 | 9 | 0 | **0** *(replaced by native backup/diff/clone/blueprint)* |
 | `threads` | 6 | 6 | 0 | 0 | **6** |
 | `users` | 6 | 6 | 0 | 2 | **8** |
 | `voice` | 3 | 0 | 3 | 0 | **0** *(voice moderation via `members_voice_moderate`)* |
 | `webhooks` | 13 | 13 | 0 | 4 | **17** |
-| **TOTAL** | **222** | **120** | **102** | **53** | **173** |
+| **TOTAL** | **222** | **120** | **102** | **52** | **172** |
 
 ---
 

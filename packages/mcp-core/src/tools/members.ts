@@ -3,14 +3,14 @@ import { FluxerRoutes } from '../fluxer/constants.js';
 import {
   AuditReasonSchema,
   ChannelId,
+  defineTool,
+  dualResult,
   type FluxerTool,
   GuildId,
+  pickDefined,
   RoleId,
   Snowflake,
   UserId,
-  defineTool,
-  dualResult,
-  pickDefined,
 } from './_lib/types.js';
 
 export const memberTools: readonly FluxerTool[] = [
@@ -18,10 +18,17 @@ export const memberTools: readonly FluxerTool[] = [
     name: 'members_list',
     category: 'members',
     guildScoped: true,
-    description: 'List members in a Fluxer guild (`GET /guilds/{guild_id}/members`) with cursor pagination.',
+    description:
+      'List members in a Fluxer guild (`GET /guilds/{guild_id}/members`) with cursor pagination.',
     inputSchema: {
       guild_id: GuildId,
-      limit: z.number().int().min(1).max(1000).optional().describe('Max members per page (1-1000, default 100)'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(1000)
+        .optional()
+        .describe('Max members per page (1-1000, default 100)'),
       after: Snowflake.optional().describe('Return members with user ID greater than this cursor'),
     },
     annotations: {
@@ -46,7 +53,8 @@ export const memberTools: readonly FluxerTool[] = [
     name: 'members_get',
     category: 'members',
     guildScoped: true,
-    description: 'Fetch a single member record in a Fluxer guild (`GET /guilds/{guild_id}/members/{user_id}`).',
+    description:
+      'Fetch a single member record in a Fluxer guild (`GET /guilds/{guild_id}/members/{user_id}`).',
     inputSchema: { guild_id: GuildId, user_id: UserId },
     annotations: {
       readOnlyHint: true,
@@ -70,7 +78,7 @@ export const memberTools: readonly FluxerTool[] = [
     category: 'members',
     guildScoped: true,
     description:
-      'Search members in a Fluxer guild using Fluxer\'s native `POST /guilds/{guild_id}/members-search` endpoint. Supports text query, role_ids, is_bot, join_source_type, source_invite_code, join/account date ranges, and sorting.',
+      "Search members in a Fluxer guild using Fluxer's native `POST /guilds/{guild_id}/members-search` endpoint. Supports text query, role_ids, is_bot, join_source_type, source_invite_code, join/account date ranges, and sorting.",
     inputSchema: {
       guild_id: GuildId,
       query: z.string().max(100).optional().describe('Username or nickname query'),
@@ -125,7 +133,8 @@ export const memberTools: readonly FluxerTool[] = [
     name: 'members_get_current_user',
     category: 'members',
     guildScoped: true,
-    description: 'Fetch the current bot\'s own member record in a Fluxer guild (`GET /guilds/{guild_id}/members/@me`).',
+    description:
+      "Fetch the current bot's own member record in a Fluxer guild (`GET /guilds/{guild_id}/members/@me`).",
     inputSchema: { guild_id: GuildId },
     annotations: {
       readOnlyHint: true,
@@ -158,9 +167,20 @@ export const memberTools: readonly FluxerTool[] = [
       roles: z.array(RoleId).optional(),
       mute: z.boolean().optional(),
       deaf: z.boolean().optional(),
-      channel_id: ChannelId.nullable().optional().describe('Move member to voice channel ID or null to disconnect'),
-      communication_disabled_until: z.string().nullable().optional().describe('ISO-8601 timeout expiry timestamp or null to clear'),
-      timeout_reason: z.string().max(512).nullable().optional().describe('Fluxer-native timeout reason'),
+      channel_id: ChannelId.nullable()
+        .optional()
+        .describe('Move member to voice channel ID or null to disconnect'),
+      communication_disabled_until: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('ISO-8601 timeout expiry timestamp or null to clear'),
+      timeout_reason: z
+        .string()
+        .max(512)
+        .nullable()
+        .optional()
+        .describe('Fluxer-native timeout reason'),
       audit_reason: AuditReasonSchema,
     },
     annotations: {
@@ -196,7 +216,7 @@ export const memberTools: readonly FluxerTool[] = [
     requiredPermissions: ['CHANGE_NICKNAME'],
     guildScoped: true,
     description:
-      'Update the bot\'s own per-guild profile in a Fluxer guild (`PATCH /guilds/{guild_id}/members/@me`): nick, bio, pronouns, accent_color, avatar, banner.',
+      "Update the bot's own per-guild profile in a Fluxer guild (`PATCH /guilds/{guild_id}/members/@me`): nick, bio, pronouns, accent_color, avatar, banner.",
     inputSchema: {
       guild_id: GuildId,
       nick: z.string().max(32).nullable().optional(),
@@ -213,7 +233,14 @@ export const memberTools: readonly FluxerTool[] = [
       openWorldHint: true,
     },
     handler: async (args, ctx) => {
-      const body = pickDefined(args, ['nick', 'bio', 'pronouns', 'accent_color', 'avatar', 'banner']);
+      const body = pickDefined(args, [
+        'nick',
+        'bio',
+        'pronouns',
+        'accent_color',
+        'avatar',
+        'banner',
+      ]);
       const updated = await ctx.rest.patch<Record<string, unknown>>(
         FluxerRoutes.guildMemberMe(args.guild_id),
         { body },
@@ -230,7 +257,8 @@ export const memberTools: readonly FluxerTool[] = [
     category: 'members',
     requiredPermissions: ['MANAGE_ROLES'],
     guildScoped: true,
-    description: 'Assign a role to a Fluxer guild member (`PUT /guilds/{guild_id}/members/{user_id}/roles/{role_id}`).',
+    description:
+      'Assign a role to a Fluxer guild member (`PUT /guilds/{guild_id}/members/{user_id}/roles/{role_id}`).',
     inputSchema: {
       guild_id: GuildId,
       user_id: UserId,
@@ -249,7 +277,12 @@ export const memberTools: readonly FluxerTool[] = [
       });
       return dualResult({
         text: `Added role \`${args.role_id}\` to user \`${args.user_id}\` in guild \`${args.guild_id}\`.`,
-        data: { assigned: true, guild_id: args.guild_id, user_id: args.user_id, role_id: args.role_id },
+        data: {
+          assigned: true,
+          guild_id: args.guild_id,
+          user_id: args.user_id,
+          role_id: args.role_id,
+        },
       });
     },
   }),
@@ -259,7 +292,8 @@ export const memberTools: readonly FluxerTool[] = [
     category: 'members',
     requiredPermissions: ['MANAGE_ROLES'],
     guildScoped: true,
-    description: 'Remove a role from a Fluxer guild member (`DELETE /guilds/{guild_id}/members/{user_id}/roles/{role_id}`).',
+    description:
+      'Remove a role from a Fluxer guild member (`DELETE /guilds/{guild_id}/members/{user_id}/roles/{role_id}`).',
     inputSchema: {
       guild_id: GuildId,
       user_id: UserId,
@@ -279,7 +313,12 @@ export const memberTools: readonly FluxerTool[] = [
       );
       return dualResult({
         text: `Removed role \`${args.role_id}\` from user \`${args.user_id}\` in guild \`${args.guild_id}\`.`,
-        data: { removed: true, guild_id: args.guild_id, user_id: args.user_id, role_id: args.role_id },
+        data: {
+          removed: true,
+          guild_id: args.guild_id,
+          user_id: args.user_id,
+          role_id: args.role_id,
+        },
       });
     },
   }),
@@ -378,7 +417,11 @@ export const memberTools: readonly FluxerTool[] = [
         .min(0)
         .max(2_419_200)
         .describe('Timeout duration in seconds (0 = clear timeout, max 28 days = 2419200)'),
-      timeout_reason: z.string().max(512).optional().describe('Fluxer-native timeout reason shown to moderators'),
+      timeout_reason: z
+        .string()
+        .max(512)
+        .optional()
+        .describe('Fluxer-native timeout reason shown to moderators'),
       audit_reason: AuditReasonSchema,
     },
     annotations: {
@@ -405,7 +448,12 @@ export const memberTools: readonly FluxerTool[] = [
           until === null
             ? `Cleared timeout for user \`${args.user_id}\` in guild \`${args.guild_id}\`.`
             : `Timed out user \`${args.user_id}\` until ${until} (${args.duration_seconds}s).`,
-        data: { guild_id: args.guild_id, user_id: args.user_id, communication_disabled_until: until, member: updated },
+        data: {
+          guild_id: args.guild_id,
+          user_id: args.user_id,
+          communication_disabled_until: until,
+          member: updated,
+        },
       });
     },
   }),
@@ -453,7 +501,8 @@ export const memberTools: readonly FluxerTool[] = [
     requiredPermissions: ['KICK_MEMBERS'],
     guildScoped: true,
     confirmRequired: true,
-    description: 'Kick a member from a Fluxer guild (`DELETE /guilds/{guild_id}/members/{user_id}`). Confirmation-gated.',
+    description:
+      'Kick a member from a Fluxer guild (`DELETE /guilds/{guild_id}/members/{user_id}`). Confirmation-gated.',
     inputSchema: {
       guild_id: GuildId,
       user_id: UserId,
@@ -504,11 +553,7 @@ export const memberTools: readonly FluxerTool[] = [
       openWorldHint: true,
     },
     handler: async (args, ctx) => {
-      const body = pickDefined(args, [
-        'delete_message_seconds',
-        'ban_duration_seconds',
-        'reason',
-      ]);
+      const body = pickDefined(args, ['delete_message_seconds', 'ban_duration_seconds', 'reason']);
       if (body.reason === undefined && args.audit_reason) {
         body.reason = args.audit_reason;
       }
@@ -633,7 +678,8 @@ export const memberTools: readonly FluxerTool[] = [
     category: 'members',
     requiredPermissions: ['BAN_MEMBERS'],
     guildScoped: true,
-    description: 'Inspect a specific ban record in a Fluxer guild (`GET /guilds/{guild_id}/bans/{user_id}`).',
+    description:
+      'Inspect a specific ban record in a Fluxer guild (`GET /guilds/{guild_id}/bans/{user_id}`).',
     inputSchema: { guild_id: GuildId, user_id: UserId },
     annotations: {
       readOnlyHint: true,

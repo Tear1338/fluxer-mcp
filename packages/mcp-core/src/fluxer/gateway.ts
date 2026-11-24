@@ -180,7 +180,10 @@ export function createFluxerGatewayClient(options: GatewayClientOptions): Gatewa
           return;
         }
         if (!stopping && ev.code !== 4004 && ev.code !== 4010 && ev.code !== 4012) {
-          options.logger.warn({ code: ev.code }, 'Fluxer Gateway disconnected; scheduling reconnect');
+          options.logger.warn(
+            { code: ev.code },
+            'Fluxer Gateway disconnected; scheduling reconnect',
+          );
           reconnectTimer = setTimeout(() => {
             void connect().catch((e) =>
               options.logger.warn(

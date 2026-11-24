@@ -3,8 +3,8 @@ import {
   CRITICAL_EVERYONE_PERMISSIONS,
   ELEVATED_FLUXER_PERMISSIONS,
   FLUXER_CHANNEL_TYPES,
-  FLUXER_PERMISSIONS,
   FLUXER_PERMISSION_NAMES,
+  FLUXER_PERMISSIONS,
   type FluxerPermissionName,
 } from './constants.js';
 
@@ -97,7 +97,15 @@ export function computeBaseGuildPermissions(options: {
 }
 
 export interface PermissionTraceStep {
-  readonly stage: 'owner' | 'everyone_role' | 'member_roles' | 'everyone_overwrite' | 'role_overwrites' | 'member_overwrite' | 'administrator_bypass' | 'timeout_restriction';
+  readonly stage:
+    | 'owner'
+    | 'everyone_role'
+    | 'member_roles'
+    | 'everyone_overwrite'
+    | 'role_overwrites'
+    | 'member_overwrite'
+    | 'administrator_bypass'
+    | 'timeout_restriction';
   readonly detail: string;
   readonly added: readonly FluxerPermissionName[];
   readonly removed: readonly FluxerPermissionName[];

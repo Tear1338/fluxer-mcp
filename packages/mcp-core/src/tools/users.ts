@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
 import {
-  type FluxerTool,
-  GuildId,
-  Snowflake,
-  UserId,
   defineTool,
   dualResult,
+  type FluxerTool,
+  GuildId,
   pickDefined,
+  Snowflake,
+  UserId,
   wrapUntrusted,
 } from './_lib/types.js';
 
@@ -35,7 +35,8 @@ export const userTools: readonly FluxerTool[] = [
   defineTool({
     name: 'users_get',
     category: 'users',
-    description: 'Fetch public information for a Fluxer user by snowflake ID (`GET /users/{user_id}`).',
+    description:
+      'Fetch public information for a Fluxer user by snowflake ID (`GET /users/{user_id}`).',
     inputSchema: {
       user_id: UserId,
     },
@@ -216,7 +217,8 @@ export const userTools: readonly FluxerTool[] = [
   defineTool({
     name: 'users_list_dm_channels',
     category: 'users',
-    description: 'List private/DM channels accessible to the current Fluxer bot (`GET /users/@me/channels`).',
+    description:
+      'List private/DM channels accessible to the current Fluxer bot (`GET /users/@me/channels`).',
     inputSchema: {},
     annotations: {
       readOnlyHint: true,

@@ -1,21 +1,17 @@
-import {
-  type CallToolResult,
-  type Tool as McpTool,
-  Server,
-} from '@modelcontextprotocol/server';
+import { type CallToolResult, type Tool as McpTool, Server } from '@modelcontextprotocol/server';
 import type { Logger } from 'pino';
 import { z } from 'zod';
 import packageJson from '../package.json' with { type: 'json' };
-import { type AuditSink, NoopAuditSink, createAuditSink } from './audit.js';
+import { type AuditSink, createAuditSink, NoopAuditSink } from './audit.js';
 import { type Config, parseCategoryAllowlist } from './config.js';
 import {
+  buildProgressiveMetaTools,
+  classifyToolRisk,
   PROGRESSIVE_ARCHITECT_TOOL_NAME,
   PROGRESSIVE_DESTRUCTIVE_TOOL_NAME,
   PROGRESSIVE_READ_TOOL_NAME,
   PROGRESSIVE_SEARCH_TOOL_NAME,
   PROGRESSIVE_WRITE_TOOL_NAME,
-  buildProgressiveMetaTools,
-  classifyToolRisk,
   searchTools,
 } from './discovery.js';
 import { FluxerMcpError, formatErrorForUser } from './errors.js';
@@ -87,7 +83,9 @@ const PROMPTS = [
     name: 'audit-fluxer-security',
     description:
       'Run a full security, permission, role hierarchy, and audit log assessment on a Fluxer community.',
-    arguments: [{ name: 'guild_id', description: 'Target Fluxer guild snowflake ID', required: true }],
+    arguments: [
+      { name: 'guild_id', description: 'Target Fluxer guild snowflake ID', required: true },
+    ],
   },
   {
     name: 'triage-moderation',
@@ -218,7 +216,10 @@ export function buildServer(deps: BuildServerDeps): BuildServerResult {
               matches.length === 0
                 ? `No Fluxer MCP tools matched "${query}".`
                 : matches
-                    .map((m) => `- \`${m.name}\` [${m.category} / ${m.risk}]: ${m.description_summary}`)
+                    .map(
+                      (m) =>
+                        `- \`${m.name}\` [${m.category} / ${m.risk}]: ${m.description_summary}`,
+                    )
                     .join('\n'),
           },
         ],
@@ -233,7 +234,9 @@ export function buildServer(deps: BuildServerDeps): BuildServerResult {
     ) {
       const targetName = typeof rawArgs.tool === 'string' ? rawArgs.tool : '';
       const targetArgs =
-        rawArgs.arguments && typeof rawArgs.arguments === 'object' && !Array.isArray(rawArgs.arguments)
+        rawArgs.arguments &&
+        typeof rawArgs.arguments === 'object' &&
+        !Array.isArray(rawArgs.arguments)
           ? (rawArgs.arguments as Record<string, unknown>)
           : {};
       const target = toolMap.get(targetName);

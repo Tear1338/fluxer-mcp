@@ -1,12 +1,6 @@
 import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
-import {
-  type FluxerTool,
-  GuildId,
-  defineTool,
-  dualResult,
-  pickDefined,
-} from './_lib/types.js';
+import { defineTool, dualResult, type FluxerTool, GuildId, pickDefined } from './_lib/types.js';
 
 export const discoveryTools: readonly FluxerTool[] = [
   defineTool({
@@ -23,7 +17,9 @@ export const discoveryTools: readonly FluxerTool[] = [
     },
     handler: async (_args, ctx) => {
       const res = await ctx.rest.get<unknown>(FluxerRoutes.discoveryCategories());
-      const categories = Array.isArray(res) ? res : ((res as { categories?: unknown[] })?.categories ?? []);
+      const categories = Array.isArray(res)
+        ? res
+        : ((res as { categories?: unknown[] })?.categories ?? []);
       return dualResult({
         text: `Retrieved ${categories.length} Fluxer discovery category(ies).`,
         data: { count: categories.length, categories },
@@ -77,7 +73,7 @@ export const discoveryTools: readonly FluxerTool[] = [
     requiredPermissions: ['MANAGE_GUILD'],
     guildScoped: true,
     description:
-      'Check a guild\'s Fluxer Discovery eligibility, minimum member count, and current discovery application status (`GET /guilds/{guild_id}/discovery`).',
+      "Check a guild's Fluxer Discovery eligibility, minimum member count, and current discovery application status (`GET /guilds/{guild_id}/discovery`).",
     inputSchema: {
       guild_id: GuildId,
     },
@@ -107,10 +103,25 @@ export const discoveryTools: readonly FluxerTool[] = [
       'Submit a Fluxer Guild Discovery application (`POST /guilds/{guild_id}/discovery`) with description, category_type, primary_language, and custom_tags.',
     inputSchema: {
       guild_id: GuildId,
-      description: z.string().min(10).max(500).describe('Public community description for Discovery'),
-      category_type: z.number().int().describe('Discovery category numeric ID (from discovery_list_categories)'),
-      primary_language: z.string().max(16).optional().describe('BCP-47 language code (e.g. "en", "fr")'),
-      custom_tags: z.array(z.string().min(1).max(32)).max(10).optional().describe('Up to 10 discovery tags'),
+      description: z
+        .string()
+        .min(10)
+        .max(500)
+        .describe('Public community description for Discovery'),
+      category_type: z
+        .number()
+        .int()
+        .describe('Discovery category numeric ID (from discovery_list_categories)'),
+      primary_language: z
+        .string()
+        .max(16)
+        .optional()
+        .describe('BCP-47 language code (e.g. "en", "fr")'),
+      custom_tags: z
+        .array(z.string().min(1).max(32))
+        .max(10)
+        .optional()
+        .describe('Up to 10 discovery tags'),
     },
     annotations: {
       readOnlyHint: false,
@@ -181,7 +192,7 @@ export const discoveryTools: readonly FluxerTool[] = [
     guildScoped: true,
     confirmRequired: true,
     description:
-      'Withdraw a guild\'s Fluxer Discovery application or remove it from Discovery (`DELETE /guilds/{guild_id}/discovery`). Confirmation-gated.',
+      "Withdraw a guild's Fluxer Discovery application or remove it from Discovery (`DELETE /guilds/{guild_id}/discovery`). Confirmation-gated.",
     inputSchema: {
       guild_id: GuildId,
     },

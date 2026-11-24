@@ -12,11 +12,11 @@ import {
 } from '../fluxer/constants.js';
 import {
   type ChannelLike,
-  type RoleLike,
   compareRolesDesc,
   decodePermissionNames,
   findDangerousPermissions,
   parsePermissionBits,
+  type RoleLike,
 } from '../fluxer/permissions.js';
 import {
   deriveSigningSecret,
@@ -28,10 +28,10 @@ import {
 import {
   AuditReasonSchema,
   ChannelId,
-  type FluxerTool,
-  GuildId,
   defineTool,
   dualResult,
+  type FluxerTool,
+  GuildId,
   pickDefined,
   wrapUntrusted,
 } from './_lib/types.js';
@@ -88,7 +88,12 @@ export const guildTools: readonly FluxerTool[] = [
     description:
       'Fetch complete Fluxer community (guild) metadata (`GET /guilds/{guild_id}`): verification_level (0..3), mfa_level, explicit_content_filter, nsfw_level, content_warning settings, disabled_operations, features, badge_ids, rules/system/afk channels, vanity_url_code, and member counts.',
     inputSchema: { guild_id: GuildId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const g = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.guild(args.guild_id));
       const untrusted = wrapUntrusted(String(g.name ?? ''), 'guild_metadata');
@@ -118,7 +123,9 @@ export const guildTools: readonly FluxerTool[] = [
         ])
         .optional()
         .describe('0=NONE, 1=LOW, 2=MEDIUM, 3=HIGH (Fluxer has 4 levels 0..3)'),
-      mfa_level: z.union([z.literal(GUILD_MFA_LEVEL.NONE), z.literal(GUILD_MFA_LEVEL.ELEVATED)]).optional(),
+      mfa_level: z
+        .union([z.literal(GUILD_MFA_LEVEL.NONE), z.literal(GUILD_MFA_LEVEL.ELEVATED)])
+        .optional(),
       explicit_content_filter: z
         .union([
           z.literal(GUILD_EXPLICIT_CONTENT_FILTER.DISABLED),
@@ -132,9 +139,14 @@ export const guildTools: readonly FluxerTool[] = [
       system_channel_id: ChannelId.nullable().optional(),
       system_channel_flags: z.number().int().min(0).optional(),
       nsfw: z.boolean().optional(),
-      nsfw_level: z.union([z.literal(GUILD_NSFW_LEVEL.SAFE), z.literal(GUILD_NSFW_LEVEL.AGE_RESTRICTED)]).optional(),
+      nsfw_level: z
+        .union([z.literal(GUILD_NSFW_LEVEL.SAFE), z.literal(GUILD_NSFW_LEVEL.AGE_RESTRICTED)])
+        .optional(),
       content_warning_level: z
-        .union([z.literal(CONTENT_WARNING_LEVEL.INHERIT), z.literal(CONTENT_WARNING_LEVEL.CONTENT_WARNING)])
+        .union([
+          z.literal(CONTENT_WARNING_LEVEL.INHERIT),
+          z.literal(CONTENT_WARNING_LEVEL.CONTENT_WARNING),
+        ])
         .optional(),
       content_warning_text: z.string().max(200).nullable().optional(),
       splash_card_alignment: z
@@ -152,7 +164,12 @@ export const guildTools: readonly FluxerTool[] = [
       message_history_cutoff: z.string().nullable().optional(),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, [
         'name',
@@ -197,7 +214,12 @@ export const guildTools: readonly FluxerTool[] = [
     inputSchema: {
       guild_id: GuildId,
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.post(FluxerRoutes.guildDelete(args.guild_id), { body: {} });
       return dualResult({
@@ -212,11 +234,19 @@ export const guildTools: readonly FluxerTool[] = [
     category: 'guild',
     requiredPermissions: ['MANAGE_GUILD'],
     guildScoped: true,
-    description: 'Get a Fluxer guild\'s custom vanity URL code and use count (`GET /guilds/{guild_id}/vanity-url`).',
+    description:
+      "Get a Fluxer guild's custom vanity URL code and use count (`GET /guilds/{guild_id}/vanity-url`).",
     inputSchema: { guild_id: GuildId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const vanity = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.guildVanityUrl(args.guild_id));
+      const vanity = await ctx.rest.get<Record<string, unknown>>(
+        FluxerRoutes.guildVanityUrl(args.guild_id),
+      );
       return dualResult({
         text: `Guild \`${args.guild_id}\` vanity URL: \`${String(vanity.code ?? 'none')}\` (uses: ${String(vanity.uses ?? 0)}).`,
         data: { guild_id: args.guild_id, ...vanity },
@@ -229,7 +259,8 @@ export const guildTools: readonly FluxerTool[] = [
     category: 'guild',
     requiredPermissions: ['MANAGE_GUILD'],
     guildScoped: true,
-    description: 'Fluxer-native: set or clear a guild\'s custom vanity URL (`PATCH /guilds/{guild_id}/vanity-url`). Requires VANITY_URL guild feature.',
+    description:
+      "Fluxer-native: set or clear a guild's custom vanity URL (`PATCH /guilds/{guild_id}/vanity-url`). Requires VANITY_URL guild feature.",
     inputSchema: {
       guild_id: GuildId,
       code: z
@@ -242,7 +273,12 @@ export const guildTools: readonly FluxerTool[] = [
         .describe('New vanity slug or null to clear'),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const vanity = await ctx.rest.patch<Record<string, unknown>>(
         FluxerRoutes.guildVanityUrl(args.guild_id),
@@ -281,7 +317,12 @@ export const guildTools: readonly FluxerTool[] = [
         .max(250),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.patch(FluxerRoutes.guildChannels(args.guild_id), {
         body: args.positions,
@@ -299,11 +340,19 @@ export const guildTools: readonly FluxerTool[] = [
     category: 'guild',
     requiredPermissions: ['MANAGE_GUILD'],
     guildScoped: true,
-    description: 'List all active invites across a Fluxer guild (`GET /guilds/{guild_id}/invites`).',
+    description:
+      'List all active invites across a Fluxer guild (`GET /guilds/{guild_id}/invites`).',
     inputSchema: { guild_id: GuildId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const invites = await ctx.rest.get<Array<Record<string, unknown>>>(FluxerRoutes.guildInvites(args.guild_id));
+      const invites = await ctx.rest.get<Array<Record<string, unknown>>>(
+        FluxerRoutes.guildInvites(args.guild_id),
+      );
       return dualResult({
         text: `Guild \`${args.guild_id}\` has ${invites.length} active invite(s).`,
         data: { guild_id: args.guild_id, count: invites.length, invites },
@@ -320,20 +369,35 @@ export const guildTools: readonly FluxerTool[] = [
       'Perform a comprehensive Fluxer community security & misconfiguration audit. Inspects verification_level, MFA moderation enforcement, explicit_content_filter, @everyone dangerous permissions, overly privileged roles (ADMINISTRATOR / MANAGE_ROLES), channel overwrite exposure leaks, unexpiring/unlimited invites, active webhooks, and raid flags. Returns a 0-100 security score, prioritized findings, and concrete remediation actions.',
     inputSchema: {
       guild_id: GuildId,
-      include_webhooks: z.boolean().optional().describe('Audit guild webhooks (requires MANAGE_WEBHOOKS, default true)'),
-      include_invites: z.boolean().optional().describe('Audit guild invites (requires MANAGE_GUILD, default true)'),
+      include_webhooks: z
+        .boolean()
+        .optional()
+        .describe('Audit guild webhooks (requires MANAGE_WEBHOOKS, default true)'),
+      include_invites: z
+        .boolean()
+        .optional()
+        .describe('Audit guild invites (requires MANAGE_GUILD, default true)'),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const [guild, roles, channels, invites, webhooks] = await Promise.all([
         ctx.rest.get<Record<string, unknown>>(FluxerRoutes.guild(args.guild_id)),
         ctx.rest.get<RoleLike[]>(FluxerRoutes.guildRoles(args.guild_id)),
         ctx.rest.get<ChannelLike[]>(FluxerRoutes.guildChannels(args.guild_id)),
         args.include_invites !== false
-          ? ctx.rest.get<Array<Record<string, unknown>>>(FluxerRoutes.guildInvites(args.guild_id)).catch(() => null)
+          ? ctx.rest
+              .get<Array<Record<string, unknown>>>(FluxerRoutes.guildInvites(args.guild_id))
+              .catch(() => null)
           : Promise.resolve(null),
         args.include_webhooks !== false
-          ? ctx.rest.get<Array<Record<string, unknown>>>(FluxerRoutes.guildWebhooks(args.guild_id)).catch(() => null)
+          ? ctx.rest
+              .get<Array<Record<string, unknown>>>(FluxerRoutes.guildWebhooks(args.guild_id))
+              .catch(() => null)
           : Promise.resolve(null),
       ]);
 
@@ -436,7 +500,8 @@ export const guildTools: readonly FluxerTool[] = [
           category: 'roles',
           resource: `guild:${args.guild_id}`,
           title: `${adminRoles.length} roles grant ADMINISTRATOR (${adminRoles.map((r) => r.name).join(', ')}).`,
-          remediation: 'Apply least privilege: keep ADMINISTRATOR on at most 1-2 founder/owner roles and grant scoped moderator permissions to other staff roles.',
+          remediation:
+            'Apply least privilege: keep ADMINISTRATOR on at most 1-2 founder/owner roles and grant scoped moderator permissions to other staff roles.',
         });
       }
 
@@ -472,7 +537,8 @@ export const guildTools: readonly FluxerTool[] = [
             category: 'invites',
             resource: `guild:${args.guild_id}`,
             title: `${permanentUnlimited.length} permanent unlimited invite links are active.`,
-            remediation: 'Revoke unused permanent invites via invites_delete to reduce raid surface.',
+            remediation:
+              'Revoke unused permanent invites via invites_delete to reduce raid surface.',
           });
         }
       }
@@ -488,7 +554,8 @@ export const guildTools: readonly FluxerTool[] = [
       }
 
       const score = Math.max(0, 100 - penalty);
-      const grade = score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : score >= 40 ? 'D' : 'F';
+      const grade =
+        score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : score >= 40 ? 'D' : 'F';
 
       return dualResult({
         text: `Security Audit for guild \`${args.guild_id}\`: **Score ${score}/100 (Grade ${grade})** — ${findings.length} finding(s) (${findings.filter((f) => f.severity === 'critical').length} critical, ${findings.filter((f) => f.severity === 'high').length} high).`,
@@ -522,11 +589,21 @@ export const guildTools: readonly FluxerTool[] = [
       apply: z
         .boolean()
         .optional()
-        .describe('Set true to actually mutate Fluxer in lockdown/restore mode; omit or false for dry-run preview'),
-      snapshot_id: z.string().optional().describe('Snapshot ID returned by lockdown (required for restore)'),
+        .describe(
+          'Set true to actually mutate Fluxer in lockdown/restore mode; omit or false for dry-run preview',
+        ),
+      snapshot_id: z
+        .string()
+        .optional()
+        .describe('Snapshot ID returned by lockdown (required for restore)'),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const [guild, roles] = await Promise.all([
         ctx.rest.get<Record<string, unknown>>(FluxerRoutes.guild(args.guild_id)),
@@ -568,7 +645,10 @@ export const guildTools: readonly FluxerTool[] = [
               status: 'preview',
               guild_id: args.guild_id,
               planned_changes: {
-                verification_level: { from: guild.verification_level ?? 0, to: GUILD_VERIFICATION_LEVEL.HIGH },
+                verification_level: {
+                  from: guild.verification_level ?? 0,
+                  to: GUILD_VERIFICATION_LEVEL.HIGH,
+                },
                 everyone_permissions: { from: currentBits.toString(), to: lockedBits.toString() },
               },
             },
@@ -621,7 +701,9 @@ export const guildTools: readonly FluxerTool[] = [
         everyone_permissions: string;
       }>({ stateDir, namespace: 'raid-shield', id: args.snapshot_id, secret });
       if (!saved || saved.payload.guild_id !== args.guild_id) {
-        throw new Error(`No verified raid-shield snapshot "${args.snapshot_id}" found for guild ${args.guild_id}.`);
+        throw new Error(
+          `No verified raid-shield snapshot "${args.snapshot_id}" found for guild ${args.guild_id}.`,
+        );
       }
 
       if (!args.apply) {
@@ -664,7 +746,12 @@ export const guildTools: readonly FluxerTool[] = [
         .optional()
         .describe('Optional custom backup identifier'),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const snapshot = await fetchGuildBackupSnapshot(args.guild_id, ctx.rest);
       const backupId = args.backup_name ?? `backup_${args.guild_id}_${Date.now()}`;
@@ -700,12 +787,24 @@ export const guildTools: readonly FluxerTool[] = [
     description:
       'Compare two Fluxer community configurations — either two saved backup IDs, a saved backup against a live guild, or two live guilds — and report added/removed/changed roles, permissions, channels, overwrites, and security settings.',
     inputSchema: {
-      source_backup_id: z.string().optional().describe('Baseline backup ID (from guild_backup_export)'),
-      source_guild_id: GuildId.optional().describe('Baseline live guild ID (if source_backup_id omitted)'),
+      source_backup_id: z
+        .string()
+        .optional()
+        .describe('Baseline backup ID (from guild_backup_export)'),
+      source_guild_id: GuildId.optional().describe(
+        'Baseline live guild ID (if source_backup_id omitted)',
+      ),
       target_backup_id: z.string().optional().describe('Target backup ID'),
-      target_guild_id: GuildId.optional().describe('Target live guild ID (if target_backup_id omitted)'),
+      target_guild_id: GuildId.optional().describe(
+        'Target live guild ID (if target_backup_id omitted)',
+      ),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const stateDir = resolveStateDirectory(ctx.config);
       const secret = deriveSigningSecret(ctx.config);
@@ -732,9 +831,16 @@ export const guildTools: readonly FluxerTool[] = [
 
       const srcRoles = new Map(src.roles.map((r) => [r.name.toLowerCase(), r]));
       const dstRoles = new Map(dst.roles.map((r) => [r.name.toLowerCase(), r]));
-      const addedRoles = dst.roles.filter((r) => !srcRoles.has(r.name.toLowerCase())).map((r) => r.name);
-      const removedRoles = src.roles.filter((r) => !dstRoles.has(r.name.toLowerCase())).map((r) => r.name);
-      const changedRoles: Array<{ name: string; changes: Record<string, { before: unknown; after: unknown }> }> = [];
+      const addedRoles = dst.roles
+        .filter((r) => !srcRoles.has(r.name.toLowerCase()))
+        .map((r) => r.name);
+      const removedRoles = src.roles
+        .filter((r) => !dstRoles.has(r.name.toLowerCase()))
+        .map((r) => r.name);
+      const changedRoles: Array<{
+        name: string;
+        changes: Record<string, { before: unknown; after: unknown }>;
+      }> = [];
       for (const [key, sRole] of srcRoles.entries()) {
         const dRole = dstRoles.get(key);
         if (!dRole) continue;
@@ -751,16 +857,33 @@ export const guildTools: readonly FluxerTool[] = [
         if (Object.keys(changes).length > 0) changedRoles.push({ name: dRole.name, changes });
       }
 
-      const srcChs = new Map(src.channels.map((c) => [`${c.type}:${(c.name ?? '').toLowerCase()}`, c]));
-      const dstChs = new Map(dst.channels.map((c) => [`${c.type}:${(c.name ?? '').toLowerCase()}`, c]));
+      const srcChs = new Map(
+        src.channels.map((c) => [`${c.type}:${(c.name ?? '').toLowerCase()}`, c]),
+      );
+      const dstChs = new Map(
+        dst.channels.map((c) => [`${c.type}:${(c.name ?? '').toLowerCase()}`, c]),
+      );
       const addedChannels = dst.channels
         .filter((c) => !srcChs.has(`${c.type}:${(c.name ?? '').toLowerCase()}`))
-        .map((c) => ({ name: c.name ?? '', type: FLUXER_CHANNEL_TYPE_NAMES[c.type] ?? String(c.type) }));
+        .map((c) => ({
+          name: c.name ?? '',
+          type: FLUXER_CHANNEL_TYPE_NAMES[c.type] ?? String(c.type),
+        }));
       const removedChannels = src.channels
         .filter((c) => !dstChs.has(`${c.type}:${(c.name ?? '').toLowerCase()}`))
-        .map((c) => ({ name: c.name ?? '', type: FLUXER_CHANNEL_TYPE_NAMES[c.type] ?? String(c.type) }));
+        .map((c) => ({
+          name: c.name ?? '',
+          type: FLUXER_CHANNEL_TYPE_NAMES[c.type] ?? String(c.type),
+        }));
 
-      const settingKeys = ['name', 'verification_level', 'mfa_level', 'explicit_content_filter', 'default_message_notifications', 'nsfw_level'] as const;
+      const settingKeys = [
+        'name',
+        'verification_level',
+        'mfa_level',
+        'explicit_content_filter',
+        'default_message_notifications',
+        'nsfw_level',
+      ] as const;
       const settingChanges: Record<string, { before: unknown; after: unknown }> = {};
       for (const k of settingKeys) {
         if (src.guild[k] !== dst.guild[k]) {
@@ -800,13 +923,21 @@ export const guildTools: readonly FluxerTool[] = [
       guild_id: GuildId.describe('Target Fluxer guild to clone/restore into'),
       source_backup_id: z.string().optional().describe('Saved backup ID from guild_backup_export'),
       source_guild_id: GuildId.optional().describe('Or live source Fluxer guild ID to clone from'),
-      include_guild_settings: z.boolean().optional().describe('Include verification_level & content filter (default true)'),
+      include_guild_settings: z
+        .boolean()
+        .optional()
+        .describe('Include verification_level & content filter (default true)'),
       strip_dangerous_everyone_permissions: z
         .boolean()
         .optional()
         .describe('Safety default (true): never copy dangerous @everyone permissions'),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const stateDir = resolveStateDirectory(ctx.config);
       const secret = deriveSigningSecret(ctx.config);
@@ -847,11 +978,16 @@ export const guildTools: readonly FluxerTool[] = [
         }));
 
       const categoriesToCreate = source.channels
-        .filter((c) => c.type === 4 && !existingChannelKeys.has(`4:${(c.name ?? '').toLowerCase()}`))
+        .filter(
+          (c) => c.type === 4 && !existingChannelKeys.has(`4:${(c.name ?? '').toLowerCase()}`),
+        )
         .map((c) => ({ name: c.name ?? 'Category' }));
 
       const channelsToCreate = source.channels
-        .filter((c) => c.type !== 4 && !existingChannelKeys.has(`${c.type}:${(c.name ?? '').toLowerCase()}`))
+        .filter(
+          (c) =>
+            c.type !== 4 && !existingChannelKeys.has(`${c.type}:${(c.name ?? '').toLowerCase()}`),
+        )
         .map((c) => {
           const raw = c as unknown as Record<string, unknown>;
           return {

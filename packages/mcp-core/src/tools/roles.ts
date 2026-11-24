@@ -1,22 +1,22 @@
 import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
 import {
-  type RoleLike,
   compareRolesDesc,
   decodePermissionNames,
   findDangerousPermissions,
   getHighestRolePosition,
   parsePermissionBits,
+  type RoleLike,
 } from '../fluxer/permissions.js';
 import {
   AuditReasonSchema,
+  defineTool,
+  dualResult,
   type FluxerTool,
   GuildId,
   PermissionString,
-  RoleId,
-  defineTool,
-  dualResult,
   pickDefined,
+  RoleId,
 } from './_lib/types.js';
 
 export const roleTools: readonly FluxerTool[] = [
@@ -64,7 +64,9 @@ export const roleTools: readonly FluxerTool[] = [
       mentionable: z.boolean().optional(),
       icon: z.string().nullable().optional().describe('Data URI image or null'),
       unicode_emoji: z.string().max(64).nullable().optional(),
-      icon_source_role_id: RoleId.optional().describe('Fluxer-native: copy icon from an existing role ID'),
+      icon_source_role_id: RoleId.optional().describe(
+        'Fluxer-native: copy icon from an existing role ID',
+      ),
       audit_reason: AuditReasonSchema,
     },
     annotations: {
@@ -109,7 +111,13 @@ export const roleTools: readonly FluxerTool[] = [
       color: z.number().int().min(0).max(0xffffff).optional(),
       permissions: PermissionString.optional(),
       hoist: z.boolean().optional(),
-      hoist_position: z.number().int().min(0).nullable().optional().describe('Fluxer-native sidebar hoist ordering position'),
+      hoist_position: z
+        .number()
+        .int()
+        .min(0)
+        .nullable()
+        .optional()
+        .describe('Fluxer-native sidebar hoist ordering position'),
       mentionable: z.boolean().optional(),
       icon: z.string().nullable().optional(),
       unicode_emoji: z.string().max(64).nullable().optional(),
@@ -201,7 +209,12 @@ export const roleTools: readonly FluxerTool[] = [
       });
       return dualResult({
         text: `Updated hierarchy positions for ${args.positions.length} role(s) in guild \`${args.guild_id}\`.`,
-        data: { updated: true, guild_id: args.guild_id, count: args.positions.length, positions: args.positions },
+        data: {
+          updated: true,
+          guild_id: args.guild_id,
+          count: args.positions.length,
+          positions: args.positions,
+        },
       });
     },
   }),
@@ -272,7 +285,7 @@ export const roleTools: readonly FluxerTool[] = [
     category: 'roles',
     guildScoped: true,
     description:
-      'Analyze a Fluxer guild\'s complete role hierarchy: flags dangerous @everyone permissions, roles with ADMINISTRATOR or privilege-escalation paths (MANAGE_ROLES above moderator roles), hoist vs hierarchy mismatches, duplicate role names, and which roles the bot can/cannot manage.',
+      "Analyze a Fluxer guild's complete role hierarchy: flags dangerous @everyone permissions, roles with ADMINISTRATOR or privilege-escalation paths (MANAGE_ROLES above moderator roles), hoist vs hierarchy mismatches, duplicate role names, and which roles the bot can/cannot manage.",
     inputSchema: {
       guild_id: GuildId,
     },
@@ -285,12 +298,19 @@ export const roleTools: readonly FluxerTool[] = [
     handler: async (args, ctx) => {
       const [rolesRaw, botMember] = await Promise.all([
         ctx.rest.get<RoleLike[]>(FluxerRoutes.guildRoles(args.guild_id)),
-        ctx.rest.get<{ roles?: string[] }>(FluxerRoutes.guildMemberMe(args.guild_id)).catch(() => null),
+        ctx.rest
+          .get<{ roles?: string[] }>(FluxerRoutes.guildMemberMe(args.guild_id))
+          .catch(() => null),
       ]);
       const sorted = [...rolesRaw].sort(compareRolesDesc);
       const botTopPos = botMember?.roles ? getHighestRolePosition(botMember.roles, sorted) : null;
 
-      const findings: Array<{ severity: 'critical' | 'high' | 'medium' | 'low'; role_id: string; role_name: string; message: string }> = [];
+      const findings: Array<{
+        severity: 'critical' | 'high' | 'medium' | 'low';
+        role_id: string;
+        role_name: string;
+        message: string;
+      }> = [];
       const seenNames = new Map<string, string[]>();
 
       const hierarchy = sorted.map((role) => {
@@ -325,10 +345,7 @@ export const roleTools: readonly FluxerTool[] = [
           });
         }
 
-        if (
-          typeof role.hoist_position === 'number' &&
-          role.hoist === false
-        ) {
+        if (typeof role.hoist_position === 'number' && role.hoist === false) {
           findings.push({
             severity: 'low',
             role_id: role.id,

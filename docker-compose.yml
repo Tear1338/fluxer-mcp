@@ -1,0 +1,44 @@
+services:
+  fluxer-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fluxer-mcp:latest
+    restart: unless-stopped
+    command: ["serve", "--http", "--host", "0.0.0.0", "--port", "3000"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      # Required: your Fluxer bot token (never hardcode in version control)
+      FLUXER_TOKEN: ${FLUXER_TOKEN:?FLUXER_TOKEN is required}
+      # Required for --http transport (minimum 32 characters)
+      FLUXER_MCP_ACCESS_TOKEN: ${FLUXER_MCP_ACCESS_TOKEN:?FLUXER_MCP_ACCESS_TOKEN is required}
+      # Optional: set for self-hosted Fluxer instances (defaults to https://api.fluxer.app)
+      FLUXER_API_URL: ${FLUXER_API_URL:-https://api.fluxer.app}
+      # Optional: custom PEM CA bundle for self-hosted private TLS CAs (TLS verification is never disabled)
+      # FLUXER_CA_CERT_PATH: /certs/ca.pem
+      # Recommended safety boundaries:
+      ALLOWED_GUILDS: ${ALLOWED_GUILDS:-}
+      MCP_WRITE_MODE: ${MCP_WRITE_MODE:-allow}
+      MCP_DRY_RUN: ${MCP_DRY_RUN:-true}
+      MCP_TOOL_SURFACE: ${MCP_TOOL_SURFACE:-progressive}
+      MCP_AUDIT_SINK: ${MCP_AUDIT_SINK:-stderr}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - fluxer_mcp_state:/data/state
+      # Uncomment to mount a private CA certificate for self-hosted Fluxer:
+      # - ./certs/ca.pem:/certs/ca.pem:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/healthz',{headers:{Authorization:'Bearer '+process.env.FLUXER_MCP_ACCESS_TOKEN}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  fluxer_mcp_state:

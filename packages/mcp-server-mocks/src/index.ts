@@ -43,7 +43,9 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
         },
         limits: {
           version: 2,
-          rules: [{ id: 'default', overrides: { max_message_length: 4000, max_guild_emojis: 500 } }],
+          rules: [
+            { id: 'default', overrides: { max_message_length: 4000, max_guild_emojis: 500 } },
+          ],
         },
       }),
     ),
@@ -56,7 +58,12 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       HttpResponse.json({
         url: 'wss://gateway.fluxer.com',
         shards: 1,
-        session_start_limit: { total: 1000, remaining: 999, reset_after: 14400000, max_concurrency: 1 },
+        session_start_limit: {
+          total: 1000,
+          remaining: 999,
+          reset_after: 14400000,
+          max_concurrency: 1,
+        },
       }),
     ),
 
@@ -221,15 +228,24 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
     }),
 
     http.patch(`${v1}/guilds/:guildId/roles`, () => new HttpResponse(null, { status: 204 })),
-    http.patch(`${v1}/guilds/:guildId/roles/hoist-positions`, () => new HttpResponse(null, { status: 204 })),
-    http.delete(`${v1}/guilds/:guildId/roles/hoist-positions`, () => new HttpResponse(null, { status: 204 })),
+    http.patch(
+      `${v1}/guilds/:guildId/roles/hoist-positions`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.delete(
+      `${v1}/guilds/:guildId/roles/hoist-positions`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
 
     http.patch(`${v1}/guilds/:guildId/roles/:roleId`, async ({ params, request }) => {
       const body = (await request.json()) as Record<string, unknown>;
       return HttpResponse.json({ id: params.roleId, name: 'Updated Role', ...body });
     }),
 
-    http.delete(`${v1}/guilds/:guildId/roles/:roleId`, () => new HttpResponse(null, { status: 204 })),
+    http.delete(
+      `${v1}/guilds/:guildId/roles/:roleId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
 
     // Channels & Forum Tags & Threads
     http.get(`${v1}/guilds/:guildId/channels`, ({ params }) =>
@@ -296,15 +312,31 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
 
     http.patch(`${v1}/channels/:channelId`, async ({ params, request }) => {
       const body = (await request.json()) as Record<string, unknown>;
-      return HttpResponse.json({ id: params.channelId, guild_id: MOCK_GUILD_ID, name: 'general', ...body });
+      return HttpResponse.json({
+        id: params.channelId,
+        guild_id: MOCK_GUILD_ID,
+        name: 'general',
+        ...body,
+      });
     }),
 
     http.delete(`${v1}/channels/:channelId`, () => new HttpResponse(null, { status: 204 })),
-    http.put(`${v1}/channels/:channelId/permissions/:overwriteId`, () => new HttpResponse(null, { status: 204 })),
-    http.delete(`${v1}/channels/:channelId/permissions/:overwriteId`, () => new HttpResponse(null, { status: 204 })),
+    http.put(
+      `${v1}/channels/:channelId/permissions/:overwriteId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.delete(
+      `${v1}/channels/:channelId/permissions/:overwriteId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.post(`${v1}/channels/:channelId/typing`, () => new HttpResponse(null, { status: 204 })),
     http.get(`${v1}/channels/:channelId/slowmode`, () =>
-      HttpResponse.json({ rate_limit_per_user: 5, retry_after_ms: 0, next_send_allowed_at: null, can_bypass: true }),
+      HttpResponse.json({
+        rate_limit_per_user: 5,
+        retry_after_ms: 0,
+        next_send_allowed_at: null,
+        can_bypass: true,
+      }),
     ),
     http.post(`${v1}/channels/:channelId/followers`, ({ params }) =>
       HttpResponse.json({ channel_id: params.channelId, webhook_id: MOCK_WEBHOOK_ID }),
@@ -321,9 +353,15 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
     }),
     http.put(`${v1}/channels/:channelId/tags/:tagId`, async ({ params, request }) => {
       const body = (await request.json()) as { name: string };
-      return HttpResponse.json({ id: params.channelId, updated_tag: { id: params.tagId, name: body.name } });
+      return HttpResponse.json({
+        id: params.channelId,
+        updated_tag: { id: params.tagId, name: body.name },
+      });
     }),
-    http.delete(`${v1}/channels/:channelId/tags/:tagId`, () => new HttpResponse(null, { status: 204 })),
+    http.delete(
+      `${v1}/channels/:channelId/tags/:tagId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.post(`${v1}/channels/:channelId/post-data`, () => HttpResponse.json({ threads: {} })),
     http.post(`${v1}/channels/:channelId/threads`, async ({ params, request }) => {
       const body = (await request.json()) as { name?: string };
@@ -335,20 +373,54 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
         name: body.name ?? 'Thread',
       });
     }),
-    http.get(`${v1}/guilds/:guildId/threads/active`, () => HttpResponse.json({ threads: [], members: [] })),
-    http.get(`${v1}/channels/:channelId/threads/archived/public`, () => HttpResponse.json({ threads: [], has_more: false })),
-    http.get(`${v1}/channels/:channelId/threads/archived/private`, () => HttpResponse.json({ threads: [], has_more: false })),
-    http.get(`${v1}/channels/:channelId/users/@me/threads/archived/private`, () => HttpResponse.json({ threads: [], has_more: false })),
-    http.get(`${v1}/channels/:channelId/threads/search`, () => HttpResponse.json({ threads: [], total_results: 0 })),
-    http.put(`${v1}/channels/:channelId/thread-members/@me`, () => new HttpResponse(null, { status: 204 })),
-    http.delete(`${v1}/channels/:channelId/thread-members/@me`, () => new HttpResponse(null, { status: 204 })),
-    http.put(`${v1}/channels/:channelId/thread-members/:userId`, () => new HttpResponse(null, { status: 204 })),
-    http.delete(`${v1}/channels/:channelId/thread-members/:userId`, () => new HttpResponse(null, { status: 204 })),
+    http.get(`${v1}/guilds/:guildId/threads/active`, () =>
+      HttpResponse.json({ threads: [], members: [] }),
+    ),
+    http.get(`${v1}/channels/:channelId/threads/archived/public`, () =>
+      HttpResponse.json({ threads: [], has_more: false }),
+    ),
+    http.get(`${v1}/channels/:channelId/threads/archived/private`, () =>
+      HttpResponse.json({ threads: [], has_more: false }),
+    ),
+    http.get(`${v1}/channels/:channelId/users/@me/threads/archived/private`, () =>
+      HttpResponse.json({ threads: [], has_more: false }),
+    ),
+    http.get(`${v1}/channels/:channelId/threads/search`, () =>
+      HttpResponse.json({ threads: [], total_results: 0 }),
+    ),
+    http.put(
+      `${v1}/channels/:channelId/thread-members/@me`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.delete(
+      `${v1}/channels/:channelId/thread-members/@me`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.put(
+      `${v1}/channels/:channelId/thread-members/:userId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.delete(
+      `${v1}/channels/:channelId/thread-members/:userId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.get(`${v1}/channels/:channelId/thread-members/:userId`, ({ params }) =>
-      HttpResponse.json({ id: params.channelId, user_id: params.userId, join_timestamp: '2026-01-01T00:00:00Z', flags: 0 }),
+      HttpResponse.json({
+        id: params.channelId,
+        user_id: params.userId,
+        join_timestamp: '2026-01-01T00:00:00Z',
+        flags: 0,
+      }),
     ),
     http.get(`${v1}/channels/:channelId/thread-members`, ({ params }) =>
-      HttpResponse.json([{ id: params.channelId, user_id: MOCK_USER_ID, join_timestamp: '2026-01-01T00:00:00Z', flags: 0 }]),
+      HttpResponse.json([
+        {
+          id: params.channelId,
+          user_id: MOCK_USER_ID,
+          join_timestamp: '2026-01-01T00:00:00Z',
+          flags: 0,
+        },
+      ]),
     ),
 
     // Messages, Pins, Reactions, Search
@@ -380,9 +452,18 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
         has_more: false,
       }),
     ),
-    http.put(`${v1}/channels/:channelId/pins/:messageId`, () => new HttpResponse(null, { status: 204 })),
-    http.delete(`${v1}/channels/:channelId/pins/:messageId`, () => new HttpResponse(null, { status: 204 })),
-    http.post(`${v1}/channels/:channelId/messages/bulk-delete`, () => new HttpResponse(null, { status: 204 })),
+    http.put(
+      `${v1}/channels/:channelId/pins/:messageId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.delete(
+      `${v1}/channels/:channelId/pins/:messageId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.post(
+      `${v1}/channels/:channelId/messages/bulk-delete`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.get(`${v1}/channels/:channelId/messages/:messageId`, ({ params }) =>
       HttpResponse.json({
         id: params.messageId,
@@ -401,19 +482,31 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
         ...body,
       });
     }),
-    http.delete(`${v1}/channels/:channelId/messages/:messageId`, () => new HttpResponse(null, { status: 204 })),
+    http.delete(
+      `${v1}/channels/:channelId/messages/:messageId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.post(`${v1}/channels/:channelId/messages/:messageId/crosspost`, ({ params }) =>
       HttpResponse.json({ id: params.messageId, channel_id: params.channelId, flags: 1 }),
     ),
     http.get(`${v1}/channels/:channelId/messages/:messageId/crosspost-source`, () =>
       HttpResponse.json({ guild_id: MOCK_GUILD_ID, channel_id: MOCK_CHANNEL_ID }),
     ),
-    http.post(`${v1}/channels/:channelId/messages/:messageId/threads`, async ({ params, request }) => {
-      const body = (await request.json()) as { name?: string };
-      return HttpResponse.json({ id: nextId(), parent_id: params.channelId, type: 11, name: body.name ?? 'Thread' });
-    }),
-    http.delete(`${v1}/channels/:channelId/messages/:messageId/attachments/:attachmentId`, () =>
-      new HttpResponse(null, { status: 204 }),
+    http.post(
+      `${v1}/channels/:channelId/messages/:messageId/threads`,
+      async ({ params, request }) => {
+        const body = (await request.json()) as { name?: string };
+        return HttpResponse.json({
+          id: nextId(),
+          parent_id: params.channelId,
+          type: 11,
+          name: body.name ?? 'Thread',
+        });
+      },
+    ),
+    http.delete(
+      `${v1}/channels/:channelId/messages/:messageId/attachments/:attachmentId`,
+      () => new HttpResponse(null, { status: 204 }),
     ),
     http.post(`${v1}/attachments/refresh-urls`, async ({ request }) => {
       const body = (await request.json()) as { attachment_urls: string[] };
@@ -422,24 +515,32 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       });
     }),
     http.post(`${v1}/search/messages`, () =>
-      HttpResponse.json({ total: 1, messages: [[{ id: makeSnowflake('hit_1'), content: 'Fluxer search match' }]] }),
+      HttpResponse.json({
+        total: 1,
+        messages: [[{ id: makeSnowflake('hit_1'), content: 'Fluxer search match' }]],
+      }),
     ),
 
     // Reactions
-    http.put(`${v1}/channels/:channelId/messages/:messageId/reactions/:emoji/@me`, () =>
-      new HttpResponse(null, { status: 204 }),
+    http.put(
+      `${v1}/channels/:channelId/messages/:messageId/reactions/:emoji/@me`,
+      () => new HttpResponse(null, { status: 204 }),
     ),
-    http.delete(`${v1}/channels/:channelId/messages/:messageId/reactions/:emoji/@me`, () =>
-      new HttpResponse(null, { status: 204 }),
+    http.delete(
+      `${v1}/channels/:channelId/messages/:messageId/reactions/:emoji/@me`,
+      () => new HttpResponse(null, { status: 204 }),
     ),
-    http.delete(`${v1}/channels/:channelId/messages/:messageId/reactions/:emoji/:userId`, () =>
-      new HttpResponse(null, { status: 204 }),
+    http.delete(
+      `${v1}/channels/:channelId/messages/:messageId/reactions/:emoji/:userId`,
+      () => new HttpResponse(null, { status: 204 }),
     ),
-    http.delete(`${v1}/channels/:channelId/messages/:messageId/reactions/:emoji`, () =>
-      new HttpResponse(null, { status: 204 }),
+    http.delete(
+      `${v1}/channels/:channelId/messages/:messageId/reactions/:emoji`,
+      () => new HttpResponse(null, { status: 204 }),
     ),
-    http.delete(`${v1}/channels/:channelId/messages/:messageId/reactions`, () =>
-      new HttpResponse(null, { status: 204 }),
+    http.delete(
+      `${v1}/channels/:channelId/messages/:messageId/reactions`,
+      () => new HttpResponse(null, { status: 204 }),
     ),
     http.get(`${v1}/channels/:channelId/messages/:messageId/reactions/:emoji`, () =>
       HttpResponse.json([{ id: MOCK_USER_ID, username: 'alice' }]),
@@ -448,7 +549,13 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
     // Members & Bans
     http.get(`${v1}/guilds/:guildId/members`, () =>
       HttpResponse.json([
-        { user: { id: MOCK_USER_ID, username: 'alice' }, roles: [MOCK_MOD_ROLE_ID], joined_at: '2026-01-01T00:00:00Z', mute: false, deaf: false },
+        {
+          user: { id: MOCK_USER_ID, username: 'alice' },
+          roles: [MOCK_MOD_ROLE_ID],
+          joined_at: '2026-01-01T00:00:00Z',
+          mute: false,
+          deaf: false,
+        },
       ]),
     ),
     http.post(`${v1}/guilds/:guildId/members-search`, ({ params }) =>
@@ -461,7 +568,12 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       }),
     ),
     http.get(`${v1}/guilds/:guildId/members/@me`, () =>
-      HttpResponse.json({ user: { id: MOCK_BOT_ID, username: 'fluxer-mcp-bot' }, roles: [MOCK_MOD_ROLE_ID], mute: false, deaf: false }),
+      HttpResponse.json({
+        user: { id: MOCK_BOT_ID, username: 'fluxer-mcp-bot' },
+        roles: [MOCK_MOD_ROLE_ID],
+        mute: false,
+        deaf: false,
+      }),
     ),
     http.patch(`${v1}/guilds/:guildId/members/@me`, async ({ request }) => {
       const body = (await request.json()) as Record<string, unknown>;
@@ -480,12 +592,27 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       const body = (await request.json()) as Record<string, unknown>;
       return HttpResponse.json({ user: { id: params.userId }, ...body });
     }),
-    http.delete(`${v1}/guilds/:guildId/members/:userId`, () => new HttpResponse(null, { status: 204 })),
-    http.put(`${v1}/guilds/:guildId/members/:userId/roles/:roleId`, () => new HttpResponse(null, { status: 204 })),
-    http.delete(`${v1}/guilds/:guildId/members/:userId/roles/:roleId`, () => new HttpResponse(null, { status: 204 })),
+    http.delete(
+      `${v1}/guilds/:guildId/members/:userId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.put(
+      `${v1}/guilds/:guildId/members/:userId/roles/:roleId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.delete(
+      `${v1}/guilds/:guildId/members/:userId/roles/:roleId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.get(`${v1}/guilds/:guildId/bans`, () =>
       HttpResponse.json([
-        { user: { id: '500000000000000099', username: 'spammer' }, reason: 'Raid', moderator_id: MOCK_USER_ID, banned_at: '2026-01-01T00:00:00Z', expires_at: null },
+        {
+          user: { id: '500000000000000099', username: 'spammer' },
+          reason: 'Raid',
+          moderator_id: MOCK_USER_ID,
+          banned_at: '2026-01-01T00:00:00Z',
+          expires_at: null,
+        },
       ]),
     ),
     http.get(`${v1}/guilds/:guildId/bans/:userId`, ({ params }) =>
@@ -498,11 +625,16 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       }),
     ),
     http.put(`${v1}/guilds/:guildId/bans/:userId`, () => new HttpResponse(null, { status: 204 })),
-    http.delete(`${v1}/guilds/:guildId/bans/:userId`, () => new HttpResponse(null, { status: 204 })),
+    http.delete(
+      `${v1}/guilds/:guildId/bans/:userId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
 
     // Invites
     http.get(`${v1}/guilds/:guildId/invites`, () =>
-      HttpResponse.json([{ code: 'flux123', uses: 3, max_uses: 0, max_age: 86400, temporary: false }]),
+      HttpResponse.json([
+        { code: 'flux123', uses: 3, max_uses: 0, max_age: 86400, temporary: false },
+      ]),
     ),
     http.get(`${v1}/channels/:channelId/invites`, () =>
       HttpResponse.json([{ code: 'flux123', uses: 3, max_uses: 0, max_age: 86400 }]),
@@ -517,7 +649,9 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
 
     // Emojis & Stickers
     http.get(`${v1}/guilds/:guildId/emojis`, () =>
-      HttpResponse.json([{ id: makeSnowflake('emoji_1'), name: 'fluxer_wave', animated: false, nsfw: false }]),
+      HttpResponse.json([
+        { id: makeSnowflake('emoji_1'), name: 'fluxer_wave', animated: false, nsfw: false },
+      ]),
     ),
     http.post(`${v1}/guilds/:guildId/emojis`, async ({ request }) => {
       const body = (await request.json()) as { name: string };
@@ -531,7 +665,10 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       const body = (await request.json()) as { name: string };
       return HttpResponse.json({ id: params.emojiId, name: body.name });
     }),
-    http.delete(`${v1}/guilds/:guildId/emojis/:emojiId`, () => new HttpResponse(null, { status: 204 })),
+    http.delete(
+      `${v1}/guilds/:guildId/emojis/:emojiId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.get(`${v1}/emojis/:emojiId/metadata`, ({ params }) =>
       HttpResponse.json({ id: params.emojiId, name: 'fluxer_wave' }),
     ),
@@ -540,7 +677,16 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
     ),
 
     http.get(`${v1}/guilds/:guildId/stickers`, () =>
-      HttpResponse.json([{ id: makeSnowflake('sticker_1'), name: 'hello', description: '', tags: ['hi'], animated: false, nsfw: false }]),
+      HttpResponse.json([
+        {
+          id: makeSnowflake('sticker_1'),
+          name: 'hello',
+          description: '',
+          tags: ['hi'],
+          animated: false,
+          nsfw: false,
+        },
+      ]),
     ),
     http.post(`${v1}/guilds/:guildId/stickers`, async ({ request }) => {
       const body = (await request.json()) as { name: string };
@@ -554,7 +700,10 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
       const body = (await request.json()) as Record<string, unknown>;
       return HttpResponse.json({ id: params.stickerId, ...body });
     }),
-    http.delete(`${v1}/guilds/:guildId/stickers/:stickerId`, () => new HttpResponse(null, { status: 204 })),
+    http.delete(
+      `${v1}/guilds/:guildId/stickers/:stickerId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.get(`${v1}/stickers/:stickerId/metadata`, ({ params }) =>
       HttpResponse.json({ id: params.stickerId, name: 'hello' }),
     ),
@@ -564,10 +713,16 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
 
     // Discovery
     http.get(`${v1}/discovery/categories`, () =>
-      HttpResponse.json([{ id: 1, name: 'Gaming' }, { id: 2, name: 'Technology' }]),
+      HttpResponse.json([
+        { id: 1, name: 'Gaming' },
+        { id: 2, name: 'Technology' },
+      ]),
     ),
     http.get(`${v1}/discovery/guilds`, () =>
-      HttpResponse.json({ guilds: [{ id: MOCK_GUILD_ID, name: 'Fluxer Test Community' }], total: 1 }),
+      HttpResponse.json({
+        guilds: [{ id: MOCK_GUILD_ID, name: 'Fluxer Test Community' }],
+        total: 1,
+      }),
     ),
     http.get(`${v1}/guilds/:guildId/discovery`, () =>
       HttpResponse.json({ eligible: true, min_member_count: 50, application: null }),
@@ -584,17 +739,44 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
 
     // Webhooks
     http.get(`${v1}/channels/:channelId/webhooks`, ({ params }) =>
-      HttpResponse.json([{ id: MOCK_WEBHOOK_ID, channel_id: params.channelId, guild_id: MOCK_GUILD_ID, name: 'CI Hook', type: 1 }]),
+      HttpResponse.json([
+        {
+          id: MOCK_WEBHOOK_ID,
+          channel_id: params.channelId,
+          guild_id: MOCK_GUILD_ID,
+          name: 'CI Hook',
+          type: 1,
+        },
+      ]),
     ),
     http.get(`${v1}/guilds/:guildId/webhooks`, ({ params }) =>
-      HttpResponse.json([{ id: MOCK_WEBHOOK_ID, channel_id: MOCK_CHANNEL_ID, guild_id: params.guildId, name: 'CI Hook', type: 1 }]),
+      HttpResponse.json([
+        {
+          id: MOCK_WEBHOOK_ID,
+          channel_id: MOCK_CHANNEL_ID,
+          guild_id: params.guildId,
+          name: 'CI Hook',
+          type: 1,
+        },
+      ]),
     ),
     http.post(`${v1}/channels/:channelId/webhooks`, async ({ params, request }) => {
       const body = (await request.json()) as { name: string };
-      return HttpResponse.json({ id: nextId(), channel_id: params.channelId, name: body.name, token: MOCK_WEBHOOK_TOKEN, type: 1 });
+      return HttpResponse.json({
+        id: nextId(),
+        channel_id: params.channelId,
+        name: body.name,
+        token: MOCK_WEBHOOK_TOKEN,
+        type: 1,
+      });
     }),
     http.get(`${v1}/webhooks/:webhookId`, ({ params }) =>
-      HttpResponse.json({ id: params.webhookId, channel_id: MOCK_CHANNEL_ID, name: 'CI Hook', type: 1 }),
+      HttpResponse.json({
+        id: params.webhookId,
+        channel_id: MOCK_CHANNEL_ID,
+        name: 'CI Hook',
+        type: 1,
+      }),
     ),
     http.patch(`${v1}/webhooks/:webhookId`, async ({ params, request }) => {
       const body = (await request.json()) as Record<string, unknown>;
@@ -612,18 +794,36 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
     http.post(`${v1}/webhooks/:webhookId/:token`, () =>
       HttpResponse.json({ id: nextId(), channel_id: MOCK_CHANNEL_ID, content: 'Webhook sent' }),
     ),
-    http.post(`${v1}/webhooks/:webhookId/:token/github`, () => new HttpResponse(null, { status: 204 })),
-    http.post(`${v1}/webhooks/:webhookId/:token/slack`, () => new HttpResponse(null, { status: 204 })),
-    http.post(`${v1}/webhooks/:webhookId/:token/instatus`, () => new HttpResponse(null, { status: 204 })),
-    http.post(`${v1}/webhooks/:webhookId/:token/libredesk`, () => new HttpResponse(null, { status: 204 })),
+    http.post(
+      `${v1}/webhooks/:webhookId/:token/github`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.post(
+      `${v1}/webhooks/:webhookId/:token/slack`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.post(
+      `${v1}/webhooks/:webhookId/:token/instatus`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
+    http.post(
+      `${v1}/webhooks/:webhookId/:token/libredesk`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.get(`${v1}/webhooks/:webhookId/:token/messages/:messageId`, ({ params }) =>
       HttpResponse.json({ id: params.messageId, content: 'Webhook msg' }),
     ),
-    http.patch(`${v1}/webhooks/:webhookId/:token/messages/:messageId`, async ({ params, request }) => {
-      const body = (await request.json()) as Record<string, unknown>;
-      return HttpResponse.json({ id: params.messageId, ...body });
-    }),
-    http.delete(`${v1}/webhooks/:webhookId/:token/messages/:messageId`, () => new HttpResponse(null, { status: 204 })),
+    http.patch(
+      `${v1}/webhooks/:webhookId/:token/messages/:messageId`,
+      async ({ params, request }) => {
+        const body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ id: params.messageId, ...body });
+      },
+    ),
+    http.delete(
+      `${v1}/webhooks/:webhookId/:token/messages/:messageId`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
   ];
 }
 

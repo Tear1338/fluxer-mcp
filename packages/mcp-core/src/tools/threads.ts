@@ -2,18 +2,19 @@ import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
 import {
   ChannelId,
+  defineTool,
+  dualResult,
   type FluxerTool,
   Snowflake,
   UserId,
-  defineTool,
-  dualResult,
 } from './_lib/types.js';
 
 export const threadTools: readonly FluxerTool[] = [
   defineTool({
     name: 'threads_join',
     category: 'threads',
-    description: 'Join a Fluxer thread as the current bot (`PUT /channels/{channel_id}/thread-members/@me`).',
+    description:
+      'Join a Fluxer thread as the current bot (`PUT /channels/{channel_id}/thread-members/@me`).',
     inputSchema: { channel_id: ChannelId },
     annotations: {
       readOnlyHint: false,
@@ -33,7 +34,8 @@ export const threadTools: readonly FluxerTool[] = [
   defineTool({
     name: 'threads_leave',
     category: 'threads',
-    description: 'Leave a Fluxer thread as the current bot (`DELETE /channels/{channel_id}/thread-members/@me`).',
+    description:
+      'Leave a Fluxer thread as the current bot (`DELETE /channels/{channel_id}/thread-members/@me`).',
     inputSchema: { channel_id: ChannelId },
     annotations: {
       readOnlyHint: false,
@@ -54,7 +56,8 @@ export const threadTools: readonly FluxerTool[] = [
     name: 'threads_add_member',
     category: 'threads',
     requiredPermissions: ['SEND_MESSAGES'],
-    description: 'Add a user to a Fluxer thread (`PUT /channels/{channel_id}/thread-members/{user_id}`).',
+    description:
+      'Add a user to a Fluxer thread (`PUT /channels/{channel_id}/thread-members/{user_id}`).',
     inputSchema: { channel_id: ChannelId, user_id: UserId },
     annotations: {
       readOnlyHint: false,
@@ -75,7 +78,8 @@ export const threadTools: readonly FluxerTool[] = [
     name: 'threads_remove_member',
     category: 'threads',
     requiredPermissions: ['MANAGE_THREADS'],
-    description: 'Remove a user from a Fluxer thread (`DELETE /channels/{channel_id}/thread-members/{user_id}`).',
+    description:
+      'Remove a user from a Fluxer thread (`DELETE /channels/{channel_id}/thread-members/{user_id}`).',
     inputSchema: { channel_id: ChannelId, user_id: UserId },
     annotations: {
       readOnlyHint: false,
@@ -95,7 +99,8 @@ export const threadTools: readonly FluxerTool[] = [
   defineTool({
     name: 'threads_get_member',
     category: 'threads',
-    description: 'Get a specific thread member record (`GET /channels/{channel_id}/thread-members/{user_id}`).',
+    description:
+      'Get a specific thread member record (`GET /channels/{channel_id}/thread-members/{user_id}`).',
     inputSchema: {
       channel_id: ChannelId,
       user_id: UserId,

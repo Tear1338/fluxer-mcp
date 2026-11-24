@@ -9,9 +9,9 @@ import {
 } from '../fluxer/constants.js';
 import {
   type ChannelLike,
-  type RoleLike,
   encodePermissionNames,
   parsePermissionBits,
+  type RoleLike,
 } from '../fluxer/permissions.js';
 import {
   deriveSigningSecret,
@@ -22,12 +22,12 @@ import {
 } from '../state.js';
 import {
   ChannelId,
+  defineTool,
+  dualResult,
   type FluxerTool,
   GuildId,
   PermissionString,
   RoleId,
-  defineTool,
-  dualResult,
 } from './_lib/types.js';
 
 export interface BlueprintRoleSpec {
@@ -86,9 +86,7 @@ const MODERATOR_PERMS = encodePermissionNames([
   'VIEW_AUDIT_LOG',
 ]).toString();
 
-const ADMIN_PERMS = encodePermissionNames([
-  'ADMINISTRATOR',
-]).toString();
+const ADMIN_PERMS = encodePermissionNames(['ADMINISTRATOR']).toString();
 
 const HELPER_PERMS = encodePermissionNames([
   'VIEW_CHANNEL',
@@ -109,13 +107,25 @@ const MEMBER_PERMS = DEFAULT_FLUXER_PERMISSIONS.toString();
  * Pure deterministic Fluxer community blueprint compiler from any natural-language prompt
  * (English or French). Zero external template API dependency.
  */
-export function compileFluxerBlueprint(request: string, customName?: string): FluxerCommunityBlueprint {
+export function compileFluxerBlueprint(
+  request: string,
+  customName?: string,
+): FluxerCommunityBlueprint {
   const lower = request.toLowerCase();
-  const isGaming = /(gaming|jeu|jeux|esport|clan|guild|minecraft|valorant|fps|mmo|squad)/i.test(lower);
-  const isDev = /(dev|code|coding|open.?source|software|tech|programming|github|api|mcp|saas|engineering)/i.test(lower);
-  const isCreator = /(stream|creator|youtube|twitch|art|music|podcast|content|créateur)/i.test(lower);
-  const isStudy = /(study|school|university|learn|course|formation|étud|ecole|école|académie)/i.test(lower);
-  const isSupport = /(support|helpdesk|product|customer|client|business|startup|company|entreprise)/i.test(lower);
+  const isGaming = /(gaming|jeu|jeux|esport|clan|guild|minecraft|valorant|fps|mmo|squad)/i.test(
+    lower,
+  );
+  const isDev =
+    /(dev|code|coding|open.?source|software|tech|programming|github|api|mcp|saas|engineering)/i.test(
+      lower,
+    );
+  const isCreator = /(stream|creator|youtube|twitch|art|music|podcast|content|créateur)/i.test(
+    lower,
+  );
+  const isStudy =
+    /(study|school|university|learn|course|formation|étud|ecole|école|académie)/i.test(lower);
+  const isSupport =
+    /(support|helpdesk|product|customer|client|business|startup|company|entreprise)/i.test(lower);
 
   const archetype = isGaming
     ? 'gaming'
@@ -145,7 +155,13 @@ export function compileFluxerBlueprint(request: string, customName?: string): Fl
 
   const roles: BlueprintRoleSpec[] = [
     { name: 'Admin', color: 0xe74c3c, hoist: true, mentionable: false, permissions: ADMIN_PERMS },
-    { name: 'Moderator', color: 0x3498db, hoist: true, mentionable: true, permissions: MODERATOR_PERMS },
+    {
+      name: 'Moderator',
+      color: 0x3498db,
+      hoist: true,
+      mentionable: true,
+      permissions: MODERATOR_PERMS,
+    },
     {
       name: isDev ? 'Maintainer' : isGaming ? 'Squad Leader' : isStudy ? 'Mentor' : 'Helper',
       color: 0x2ecc71,
@@ -154,13 +170,16 @@ export function compileFluxerBlueprint(request: string, customName?: string): Fl
       permissions: HELPER_PERMS,
     },
     { name: 'VIP', color: 0xf1c40f, hoist: true, mentionable: false, permissions: MEMBER_PERMS },
-    { name: 'Member', color: 0x95a5a6, hoist: false, mentionable: false, permissions: MEMBER_PERMS },
+    {
+      name: 'Member',
+      color: 0x95a5a6,
+      hoist: false,
+      mentionable: false,
+      permissions: MEMBER_PERMS,
+    },
   ];
 
-  const categories: Array<{ name: string }> = [
-    { name: 'Information' },
-    { name: 'Community' },
-  ];
+  const categories: Array<{ name: string }> = [{ name: 'Information' }, { name: 'Community' }];
 
   const channels: BlueprintChannelSpec[] = [
     {
@@ -207,9 +226,26 @@ export function compileFluxerBlueprint(request: string, customName?: string): Fl
   if (isGaming) {
     categories.push({ name: 'Gaming & LFG' }, { name: 'Voice Lounges' });
     channels.push(
-      { name: 'looking-for-group', type: FLUXER_CHANNEL_TYPES.GUILD_FORUM, category: 'Gaming & LFG', topic: 'Find teammates and organize squads.', forum_tags: ['Casual', 'Ranked', 'Tournament', 'EU', 'NA'] },
-      { name: 'clips-and-highlights', type: FLUXER_CHANNEL_TYPES.GUILD_TEXT, category: 'Gaming & LFG', topic: 'Share your best plays and highlights.' },
-      { name: 'tournaments', type: FLUXER_CHANNEL_TYPES.GUILD_ANNOUNCEMENT, category: 'Gaming & LFG', topic: 'Brackets, schedules, and tournament news.', read_only_for_everyone: true },
+      {
+        name: 'looking-for-group',
+        type: FLUXER_CHANNEL_TYPES.GUILD_FORUM,
+        category: 'Gaming & LFG',
+        topic: 'Find teammates and organize squads.',
+        forum_tags: ['Casual', 'Ranked', 'Tournament', 'EU', 'NA'],
+      },
+      {
+        name: 'clips-and-highlights',
+        type: FLUXER_CHANNEL_TYPES.GUILD_TEXT,
+        category: 'Gaming & LFG',
+        topic: 'Share your best plays and highlights.',
+      },
+      {
+        name: 'tournaments',
+        type: FLUXER_CHANNEL_TYPES.GUILD_ANNOUNCEMENT,
+        category: 'Gaming & LFG',
+        topic: 'Brackets, schedules, and tournament news.',
+        read_only_for_everyone: true,
+      },
       { name: 'Lobby Voice', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Voice Lounges' },
       { name: 'Squad Alpha', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Voice Lounges' },
       { name: 'Squad Bravo', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Voice Lounges' },
@@ -217,26 +253,74 @@ export function compileFluxerBlueprint(request: string, customName?: string): Fl
   } else if (isDev || isSupport) {
     categories.push({ name: 'Help & Engineering' }, { name: 'Voice & Pairing' });
     channels.push(
-      { name: 'help-forum', type: FLUXER_CHANNEL_TYPES.GUILD_FORUM, category: 'Help & Engineering', topic: 'Ask questions and browse solved threads.', forum_tags: ['Question', 'Bug', 'Solved', 'Feature Request'] },
-      { name: 'showcase', type: FLUXER_CHANNEL_TYPES.GUILD_TEXT, category: 'Help & Engineering', topic: 'Share projects, PRs, and launches.' },
-      { name: 'changelog', type: FLUXER_CHANNEL_TYPES.GUILD_ANNOUNCEMENT, category: 'Help & Engineering', topic: 'Releases and status updates.', read_only_for_everyone: true },
-      { name: 'documentation', type: FLUXER_CHANNEL_TYPES.GUILD_LINK, category: 'Information', url: 'https://docs.fluxer.com/' },
+      {
+        name: 'help-forum',
+        type: FLUXER_CHANNEL_TYPES.GUILD_FORUM,
+        category: 'Help & Engineering',
+        topic: 'Ask questions and browse solved threads.',
+        forum_tags: ['Question', 'Bug', 'Solved', 'Feature Request'],
+      },
+      {
+        name: 'showcase',
+        type: FLUXER_CHANNEL_TYPES.GUILD_TEXT,
+        category: 'Help & Engineering',
+        topic: 'Share projects, PRs, and launches.',
+      },
+      {
+        name: 'changelog',
+        type: FLUXER_CHANNEL_TYPES.GUILD_ANNOUNCEMENT,
+        category: 'Help & Engineering',
+        topic: 'Releases and status updates.',
+        read_only_for_everyone: true,
+      },
+      {
+        name: 'documentation',
+        type: FLUXER_CHANNEL_TYPES.GUILD_LINK,
+        category: 'Information',
+        url: 'https://docs.fluxer.com/',
+      },
       { name: 'Office Hours', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Voice & Pairing' },
-      { name: 'Pair Programming', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Voice & Pairing' },
+      {
+        name: 'Pair Programming',
+        type: FLUXER_CHANNEL_TYPES.GUILD_VOICE,
+        category: 'Voice & Pairing',
+      },
     );
   } else if (isStudy) {
     categories.push({ name: 'Study & Q&A' }, { name: 'Study Rooms' });
     channels.push(
-      { name: 'questions-forum', type: FLUXER_CHANNEL_TYPES.GUILD_FORUM, category: 'Study & Q&A', topic: 'Post study questions by subject.', forum_tags: ['Beginner', 'Intermediate', 'Solved', 'Resources'] },
-      { name: 'resources', type: FLUXER_CHANNEL_TYPES.GUILD_TEXT, category: 'Study & Q&A', topic: 'Curated guides, notes, and tools.' },
+      {
+        name: 'questions-forum',
+        type: FLUXER_CHANNEL_TYPES.GUILD_FORUM,
+        category: 'Study & Q&A',
+        topic: 'Post study questions by subject.',
+        forum_tags: ['Beginner', 'Intermediate', 'Solved', 'Resources'],
+      },
+      {
+        name: 'resources',
+        type: FLUXER_CHANNEL_TYPES.GUILD_TEXT,
+        category: 'Study & Q&A',
+        topic: 'Curated guides, notes, and tools.',
+      },
       { name: 'Quiet Study', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Study Rooms' },
       { name: 'Group Discussion', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Study Rooms' },
     );
   } else {
     categories.push({ name: 'Discussions' }, { name: 'Voice' });
     channels.push(
-      { name: 'forum', type: FLUXER_CHANNEL_TYPES.GUILD_FORUM, category: 'Discussions', topic: 'Long-form topics and Q&A.', forum_tags: ['Discussion', 'Feedback', 'Idea', 'Answered'] },
-      { name: 'off-topic', type: FLUXER_CHANNEL_TYPES.GUILD_TEXT, category: 'Discussions', topic: 'Casual conversation.' },
+      {
+        name: 'forum',
+        type: FLUXER_CHANNEL_TYPES.GUILD_FORUM,
+        category: 'Discussions',
+        topic: 'Long-form topics and Q&A.',
+        forum_tags: ['Discussion', 'Feedback', 'Idea', 'Answered'],
+      },
+      {
+        name: 'off-topic',
+        type: FLUXER_CHANNEL_TYPES.GUILD_TEXT,
+        category: 'Discussions',
+        topic: 'Casual conversation.',
+      },
       { name: 'General Voice', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Voice' },
       { name: 'Lounge', type: FLUXER_CHANNEL_TYPES.GUILD_VOICE, category: 'Voice' },
     );
@@ -245,8 +329,20 @@ export function compileFluxerBlueprint(request: string, customName?: string): Fl
   // Staff category (always included for secure community operations)
   categories.push({ name: 'Staff' });
   channels.push(
-    { name: 'staff-chat', type: FLUXER_CHANNEL_TYPES.GUILD_TEXT, category: 'Staff', topic: 'Private staff coordination.', staff_only: true },
-    { name: 'mod-logs', type: FLUXER_CHANNEL_TYPES.GUILD_TEXT, category: 'Staff', topic: 'Moderation notes and audit alerts.', staff_only: true },
+    {
+      name: 'staff-chat',
+      type: FLUXER_CHANNEL_TYPES.GUILD_TEXT,
+      category: 'Staff',
+      topic: 'Private staff coordination.',
+      staff_only: true,
+    },
+    {
+      name: 'mod-logs',
+      type: FLUXER_CHANNEL_TYPES.GUILD_TEXT,
+      category: 'Staff',
+      topic: 'Moderation notes and audit alerts.',
+      staff_only: true,
+    },
   );
 
   const welcomePosts: BlueprintWelcomePost[] = [
@@ -320,10 +416,20 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
     description:
       'Design-only, zero-API-call compiler: transforms any natural-language community description (English or French) into a complete, security-hardened Fluxer community blueprint (roles, Fluxer permission bitfields, categories, text/announcement/voice/forum/media/link channels, forum tags, staff area, and welcome/rules posts).',
     inputSchema: {
-      request: z.string().trim().min(3).max(500).describe('Natural-language description of the community to design'),
+      request: z
+        .string()
+        .trim()
+        .min(3)
+        .max(500)
+        .describe('Natural-language description of the community to design'),
       community_name: z.string().trim().min(2).max(100).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     handler: async (args) => {
       const blueprint = compileFluxerBlueprint(args.request, args.community_name);
       return dualResult({
@@ -344,7 +450,12 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       request: z.string().trim().min(3).max(500).describe('Natural-language community description'),
       community_name: z.string().trim().min(2).max(100).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const blueprint = compileFluxerBlueprint(args.request, args.community_name);
       const [roles, channels] = await Promise.all([
@@ -354,14 +465,20 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
 
       const existingRoles = new Set(roles.map((r) => r.name.toLowerCase()));
       const existingCats = new Set(
-        channels.filter((c) => c.type === FLUXER_CHANNEL_TYPES.GUILD_CATEGORY).map((c) => (c.name ?? '').toLowerCase()),
+        channels
+          .filter((c) => c.type === FLUXER_CHANNEL_TYPES.GUILD_CATEGORY)
+          .map((c) => (c.name ?? '').toLowerCase()),
       );
       const existingChs = new Set(
-        channels.filter((c) => c.type !== FLUXER_CHANNEL_TYPES.GUILD_CATEGORY).map((c) => `${c.type}:${(c.name ?? '').toLowerCase()}`),
+        channels
+          .filter((c) => c.type !== FLUXER_CHANNEL_TYPES.GUILD_CATEGORY)
+          .map((c) => `${c.type}:${(c.name ?? '').toLowerCase()}`),
       );
 
       const missingRoles = blueprint.roles.filter((r) => !existingRoles.has(r.name.toLowerCase()));
-      const missingCats = blueprint.categories.filter((c) => !existingCats.has(c.name.toLowerCase()));
+      const missingCats = blueprint.categories.filter(
+        (c) => !existingCats.has(c.name.toLowerCase()),
+      );
       const missingChs = blueprint.channels.filter(
         (c) => !existingChs.has(`${c.type}:${c.name.toLowerCase()}`),
       );
@@ -381,7 +498,10 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       });
 
       const totalOps =
-        missingRoles.length + missingCats.length + missingChs.length + (blueprint.guild_settings ? 1 : 0);
+        missingRoles.length +
+        missingCats.length +
+        missingChs.length +
+        (blueprint.guild_settings ? 1 : 0);
 
       return dualResult({
         text: `Fluxer blueprint plan \`${saved.id}\` ready for guild \`${args.guild_id}\`: ${missingRoles.length} role(s), ${missingCats.length} category(ies), ${missingChs.length} channel(s), ${blueprint.welcome_posts.length} starter post(s). No mutations performed — apply with \`guild_blueprint_apply\`.`,
@@ -416,10 +536,22 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       'Execute a signed Fluxer blueprint or clone plan (`plan_ref`) against its locked target guild. Idempotently creates missing roles, categories, channels (with overwrites & forum tags), applies safe guild settings, posts starter messages, and verifies live readback. Confirmation-gated.',
     inputSchema: {
       guild_id: GuildId,
-      plan_ref: z.string().min(4).max(128).describe('Signed plan_ref returned by guild_blueprint_plan or guild_clone_plan'),
-      post_welcome_messages: z.boolean().optional().describe('Publish & pin starter welcome/rules embeds (default true)'),
+      plan_ref: z
+        .string()
+        .min(4)
+        .max(128)
+        .describe('Signed plan_ref returned by guild_blueprint_plan or guild_clone_plan'),
+      post_welcome_messages: z
+        .boolean()
+        .optional()
+        .describe('Publish & pin starter welcome/rules embeds (default true)'),
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const saved = loadSignedState<StoredBlueprintPlan>({
         stateDir: resolveStateDirectory(ctx.config),
@@ -428,7 +560,9 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
         secret: deriveSigningSecret(ctx.config),
       });
       if (!saved || saved.payload.guild_id !== args.guild_id) {
-        throw new Error(`Signed blueprint plan "${args.plan_ref}" not found or does not match guild ${args.guild_id}.`);
+        throw new Error(
+          `Signed blueprint plan "${args.plan_ref}" not found or does not match guild ${args.guild_id}.`,
+        );
       }
       const bp = saved.payload.blueprint;
       const [existingRoles, existingChannels] = await Promise.all([
@@ -504,7 +638,9 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
             id: args.guild_id,
             type: 0,
             allow: FLUXER_PERMISSIONS.VIEW_CHANNEL.toString(),
-            deny: (FLUXER_PERMISSIONS.SEND_MESSAGES | FLUXER_PERMISSIONS.CREATE_PUBLIC_THREADS).toString(),
+            deny: (
+              FLUXER_PERMISSIONS.SEND_MESSAGES | FLUXER_PERMISSIONS.CREATE_PUBLIC_THREADS
+            ).toString(),
           });
         }
         if (ch.staff_only) {
@@ -518,7 +654,9 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
             overwrites.push({
               id: modRoleId,
               type: 0,
-              allow: (FLUXER_PERMISSIONS.VIEW_CHANNEL | FLUXER_PERMISSIONS.SEND_MESSAGES).toString(),
+              allow: (
+                FLUXER_PERMISSIONS.VIEW_CHANNEL | FLUXER_PERMISSIONS.SEND_MESSAGES
+              ).toString(),
               deny: '0',
             });
           }
@@ -526,7 +664,9 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
             overwrites.push({
               id: adminRoleId,
               type: 0,
-              allow: (FLUXER_PERMISSIONS.VIEW_CHANNEL | FLUXER_PERMISSIONS.SEND_MESSAGES).toString(),
+              allow: (
+                FLUXER_PERMISSIONS.VIEW_CHANNEL | FLUXER_PERMISSIONS.SEND_MESSAGES
+              ).toString(),
               deny: '0',
             });
           }
@@ -608,7 +748,12 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       guild_id: GuildId,
       plan_ref: z.string().min(4).max(128),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const saved = loadSignedState<StoredBlueprintPlan>({
         stateDir: resolveStateDirectory(ctx.config),
@@ -629,7 +774,9 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       ]);
       const roleSet = new Set(roles.map((r) => r.name.toLowerCase()));
       const chSet = new Set(channels.map((c) => `${c.type}:${(c.name ?? '').toLowerCase()}`));
-      const missingRoles = bp.roles.filter((r) => !roleSet.has(r.name.toLowerCase())).map((r) => r.name);
+      const missingRoles = bp.roles
+        .filter((r) => !roleSet.has(r.name.toLowerCase()))
+        .map((r) => r.name);
       const missingCategories = bp.categories
         .filter((c) => !chSet.has(`${FLUXER_CHANNEL_TYPES.GUILD_CATEGORY}:${c.name.toLowerCase()}`))
         .map((c) => c.name);
@@ -703,7 +850,12 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
         )
         .optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const [guild, roles, channels] = await Promise.all([
         ctx.rest.get<Record<string, unknown>>(FluxerRoutes.guild(args.guild_id)),
@@ -722,7 +874,8 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
         if (!chMap.has(c.id)) blockers.push(`Channel ${c.id} not found.`);
       }
       for (const ow of args.permission_overwrites ?? []) {
-        if (!chMap.has(ow.channel_id)) blockers.push(`Channel ${ow.channel_id} not found for overwrite.`);
+        if (!chMap.has(ow.channel_id))
+          blockers.push(`Channel ${ow.channel_id} not found for overwrite.`);
       }
 
       if (blockers.length > 0) {
@@ -744,8 +897,14 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
           request: args.request,
           before_snapshot: { guild, roles, channels },
           changes: {
-            roles: (args.roles ?? []).map((r) => ({ id: r.id, patch: r.patch as Record<string, unknown> })),
-            channels: (args.channels ?? []).map((c) => ({ id: c.id, patch: c.patch as Record<string, unknown> })),
+            roles: (args.roles ?? []).map((r) => ({
+              id: r.id,
+              patch: r.patch as Record<string, unknown>,
+            })),
+            channels: (args.channels ?? []).map((c) => ({
+              id: c.id,
+              patch: c.patch as Record<string, unknown>,
+            })),
             permission_overwrites: args.permission_overwrites ?? [],
           },
         },
@@ -776,7 +935,12 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       guild_id: GuildId,
       plan_ref: z.string().min(4).max(128),
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const saved = loadSignedState<StoredChangePlan>({
         stateDir: resolveStateDirectory(ctx.config),
@@ -835,7 +999,12 @@ export const blueprintAndChangeTools: readonly FluxerTool[] = [
       guild_id: GuildId,
       plan_ref: z.string().min(4).max(128),
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const saved = loadSignedState<StoredChangePlan>({
         stateDir: resolveStateDirectory(ctx.config),

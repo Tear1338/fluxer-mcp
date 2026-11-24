@@ -132,7 +132,7 @@ export function stripAuthPrefix(token: string): string {
 }
 
 export function parseGuildAllowlist(allowedGuilds?: string): ReadonlySet<string> | null {
-  if (!allowedGuilds || !allowedGuilds.trim()) return null;
+  if (!allowedGuilds?.trim()) return null;
   const ids = allowedGuilds
     .split(',')
     .map((id) => id.trim())
@@ -141,7 +141,7 @@ export function parseGuildAllowlist(allowedGuilds?: string): ReadonlySet<string>
 }
 
 export function parseCategoryAllowlist(categories?: string): ReadonlySet<string> | null {
-  if (!categories || !categories.trim()) return null;
+  if (!categories?.trim()) return null;
   const names = categories
     .split(',')
     .map((c) => c.trim().toLowerCase())

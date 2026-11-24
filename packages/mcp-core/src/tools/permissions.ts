@@ -6,19 +6,19 @@ import {
 } from '../fluxer/constants.js';
 import {
   type ChannelLike,
-  type RoleLike,
   compareRolesDesc,
   evaluateChannelPermissions,
   hasPermissionBit,
   isThreadChannelType,
+  type RoleLike,
 } from '../fluxer/permissions.js';
 import {
   ChannelId,
+  defineTool,
+  dualResult,
   type FluxerTool,
   GuildId,
   UserId,
-  defineTool,
-  dualResult,
 } from './_lib/types.js';
 
 export const permissionTools: readonly FluxerTool[] = [
@@ -27,7 +27,7 @@ export const permissionTools: readonly FluxerTool[] = [
     category: 'permissions',
     guildScoped: true,
     description:
-      'Audit which roles in a Fluxer guild can view, send messages in, or manage a given channel or thread (evaluating each role independently with @everyone and channel/parent overwrites using Fluxer\'s exact permission bits).',
+      "Audit which roles in a Fluxer guild can view, send messages in, or manage a given channel or thread (evaluating each role independently with @everyone and channel/parent overwrites using Fluxer's exact permission bits).",
     inputSchema: {
       guild_id: GuildId,
       channel_id: ChannelId,
@@ -67,10 +67,7 @@ export const permissionTools: readonly FluxerTool[] = [
           );
         const canManage =
           canView &&
-          hasPermissionBit(
-            evalRes.effectiveBits,
-            isThread ? 'MANAGE_THREADS' : 'MANAGE_CHANNELS',
-          );
+          hasPermissionBit(evalRes.effectiveBits, isThread ? 'MANAGE_THREADS' : 'MANAGE_CHANNELS');
         return {
           role_id: role.id,
           role_name: role.name,
@@ -102,7 +99,7 @@ export const permissionTools: readonly FluxerTool[] = [
     category: 'permissions',
     guildScoped: true,
     description:
-      'Compute and explain a specific member\'s effective Fluxer permissions in a channel or thread, with a complete step-by-step trace (owner, @everyone, roles, ADMINISTRATOR bypass, channel overwrites, and active timeout restrictions).',
+      "Compute and explain a specific member's effective Fluxer permissions in a channel or thread, with a complete step-by-step trace (owner, @everyone, roles, ADMINISTRATOR bypass, channel overwrites, and active timeout restrictions).",
     inputSchema: {
       guild_id: GuildId,
       channel_id: ChannelId,

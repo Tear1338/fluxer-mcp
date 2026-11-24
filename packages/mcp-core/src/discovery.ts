@@ -102,9 +102,7 @@ export function searchTools(
     }
   }
 
-  return scored
-    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
-    .slice(0, limit);
+  return scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)).slice(0, limit);
 }
 
 export function buildProgressiveMetaTools(): McpTool[] {
@@ -180,7 +178,10 @@ export function buildProgressiveMetaTools(): McpTool[] {
         type: 'object',
         properties: {
           tool: { type: 'string', description: 'Exact destructive tool name' },
-          arguments: { type: 'object', description: 'Tool input arguments (include __confirm: true)' },
+          arguments: {
+            type: 'object',
+            description: 'Tool input arguments (include __confirm: true)',
+          },
         },
         required: ['tool'],
       },

@@ -6,12 +6,7 @@ import {
   resolveStateDirectory,
   saveSignedState,
 } from '../state.js';
-import {
-  type FluxerTool,
-  defineTool,
-  dualResult,
-  extractStructuredData,
-} from './_lib/types.js';
+import { defineTool, dualResult, extractStructuredData, type FluxerTool } from './_lib/types.js';
 
 function resolvePath(obj: unknown, path: string): unknown {
   let cur: unknown = obj;
@@ -22,16 +17,22 @@ function resolvePath(obj: unknown, path: string): unknown {
   return cur;
 }
 
-function interpolateValue(value: unknown, stepOutputs: Record<string, Record<string, unknown>>): unknown {
+function interpolateValue(
+  value: unknown,
+  stepOutputs: Record<string, Record<string, unknown>>,
+): unknown {
   if (typeof value === 'string') {
     const exactMatch = value.match(/^\$\{([A-Za-z0-9_-]+)\.([A-Za-z0-9_.-]+)\}$/);
     if (exactMatch) {
       return resolvePath(stepOutputs[exactMatch[1]!], exactMatch[2]!);
     }
-    return value.replace(/\$\{([A-Za-z0-9_-]+)\.([A-Za-z0-9_.-]+)\}/g, (_all, stepId: string, field: string) => {
-      const resolved = resolvePath(stepOutputs[stepId], field);
-      return resolved === undefined || resolved === null ? '' : String(resolved);
-    });
+    return value.replace(
+      /\$\{([A-Za-z0-9_-]+)\.([A-Za-z0-9_.-]+)\}/g,
+      (_all, stepId: string, field: string) => {
+        const resolved = resolvePath(stepOutputs[stepId], field);
+        return resolved === undefined || resolved === null ? '' : String(resolved);
+      },
+    );
   }
   if (Array.isArray(value)) return value.map((v) => interpolateValue(v, stepOutputs));
   if (value !== null && typeof value === 'object') {
@@ -45,7 +46,11 @@ function interpolateValue(value: unknown, stepOutputs: Record<string, Record<str
 }
 
 const WorkflowStepSchema = z.object({
-  id: z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/),
+  id: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[A-Za-z0-9_-]+$/),
   tool: z.string().min(1).max(128),
   arguments: z.record(z.string(), z.unknown()).default({}),
   continue_on_error: z.boolean().optional(),
@@ -76,7 +81,12 @@ export const metaTools: readonly FluxerTool[] = [
       goal: z.string().trim().min(3).max(500).describe('What you want to accomplish in Fluxer'),
       limit: z.number().int().min(1).max(20).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     handler: async (args, ctx) => {
       const tools = ctx.getTools();
       const matches = searchTools(tools, args.goal, { limit: args.limit ?? 10 });
@@ -109,20 +119,36 @@ export const metaTools: readonly FluxerTool[] = [
     name: 'mcp_pipeline',
     category: 'meta',
     description:
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: documents pipeline placeholder syntax
       'Execute a sequential multi-step Fluxer MCP tool pipeline (up to 20 steps) with `${stepId.field}` output interpolation. Every step passes through the full Fluxer MCP safety, allowlist, and confirmation middleware.',
     inputSchema: {
       steps: z.array(WorkflowStepSchema).min(1).max(20),
-      stop_on_error: z.boolean().optional().describe('Abort remaining steps on first failure (default true)'),
+      stop_on_error: z
+        .boolean()
+        .optional()
+        .describe('Abort remaining steps on first failure (default true)'),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const outputs: Record<string, Record<string, unknown>> = {};
-      const results: Array<{ id: string; tool: string; status: 'ok' | 'error'; data: Record<string, unknown> }> = [];
+      const results: Array<{
+        id: string;
+        tool: string;
+        status: 'ok' | 'error';
+        data: Record<string, unknown>;
+      }> = [];
       let failed = false;
 
       for (const step of args.steps) {
         if (step.tool === 'mcp_pipeline' || step.tool.startsWith('workflow_')) {
-          throw new Error(`Recursive orchestration tool "${step.tool}" is not allowed inside mcp_pipeline.`);
+          throw new Error(
+            `Recursive orchestration tool "${step.tool}" is not allowed inside mcp_pipeline.`,
+          );
         }
         const resolvedArgs = interpolateValue(step.arguments, outputs) as Record<string, unknown>;
         const res = await ctx.invokeTool(step.tool, resolvedArgs);
@@ -152,7 +178,12 @@ export const metaTools: readonly FluxerTool[] = [
       name: z.string().trim().min(1).max(100),
       steps: z.array(WorkflowStepSchema).min(1).max(30),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const stateDir = resolveStateDirectory(ctx.config);
       const secret = deriveSigningSecret(ctx.config);
@@ -171,7 +202,10 @@ export const metaTools: readonly FluxerTool[] = [
 
       for (let i = 0; i < wf.steps.length; i++) {
         const step = wf.steps[i]!;
-        const resolvedArgs = interpolateValue(step.arguments, wf.outputs) as Record<string, unknown>;
+        const resolvedArgs = interpolateValue(step.arguments, wf.outputs) as Record<
+          string,
+          unknown
+        >;
         const res = await ctx.invokeTool(step.tool, resolvedArgs);
         const data = extractStructuredData(res);
         const ok = res.isError !== true;
@@ -206,7 +240,12 @@ export const metaTools: readonly FluxerTool[] = [
     category: 'meta',
     description: 'Inspect the checkpointed status and step results of a durable Fluxer workflow.',
     inputSchema: { workflow_id: z.string().min(3).max(128) },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     handler: async (args, ctx) => {
       const rec = loadSignedState<StoredWorkflow>({
         stateDir: resolveStateDirectory(ctx.config),
@@ -227,7 +266,12 @@ export const metaTools: readonly FluxerTool[] = [
     category: 'meta',
     description: 'Resume a failed or paused durable Fluxer workflow from its next incomplete step.',
     inputSchema: { workflow_id: z.string().min(3).max(128) },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const stateDir = resolveStateDirectory(ctx.config);
       const secret = deriveSigningSecret(ctx.config);
@@ -249,7 +293,10 @@ export const metaTools: readonly FluxerTool[] = [
 
       for (let i = wf.completed_index + 1; i < wf.steps.length; i++) {
         const step = wf.steps[i]!;
-        const resolvedArgs = interpolateValue(step.arguments, wf.outputs) as Record<string, unknown>;
+        const resolvedArgs = interpolateValue(step.arguments, wf.outputs) as Record<
+          string,
+          unknown
+        >;
         const res = await ctx.invokeTool(step.tool, resolvedArgs);
         const data = extractStructuredData(res);
         const ok = res.isError !== true;
@@ -268,7 +315,13 @@ export const metaTools: readonly FluxerTool[] = [
             },
           ],
         };
-        saveSignedState({ stateDir, namespace: 'workflows', id: wf.workflow_id, secret, payload: wf });
+        saveSignedState({
+          stateDir,
+          namespace: 'workflows',
+          id: wf.workflow_id,
+          secret,
+          payload: wf,
+        });
         if (!ok && !step.continue_on_error) break;
       }
 
@@ -284,7 +337,12 @@ export const metaTools: readonly FluxerTool[] = [
     category: 'meta',
     description: 'Mark a durable Fluxer workflow as cancelled so it cannot be resumed.',
     inputSchema: { workflow_id: z.string().min(3).max(128) },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     handler: async (args, ctx) => {
       const stateDir = resolveStateDirectory(ctx.config);
       const secret = deriveSigningSecret(ctx.config);
@@ -296,7 +354,13 @@ export const metaTools: readonly FluxerTool[] = [
       });
       if (!rec) throw new Error(`Workflow "${args.workflow_id}" not found.`);
       const cancelled: StoredWorkflow = { ...rec.payload, status: 'cancelled' };
-      saveSignedState({ stateDir, namespace: 'workflows', id: cancelled.workflow_id, secret, payload: cancelled });
+      saveSignedState({
+        stateDir,
+        namespace: 'workflows',
+        id: cancelled.workflow_id,
+        secret,
+        payload: cancelled,
+      });
       return dualResult({
         text: `Cancelled workflow \`${cancelled.workflow_id}\`.`,
         data: cancelled as unknown as Record<string, unknown>,

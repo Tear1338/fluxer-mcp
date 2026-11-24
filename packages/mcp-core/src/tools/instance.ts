@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
-import { ApplicationId, type FluxerTool, defineTool, dualResult } from './_lib/types.js';
+import { ApplicationId, defineTool, dualResult, type FluxerTool } from './_lib/types.js';
 
 export const instanceAndApplicationTools: readonly FluxerTool[] = [
   defineTool({

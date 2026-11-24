@@ -1,31 +1,37 @@
 # Fluxer MCP — Continuation Guide
 
-This file records architectural decisions, invariants, and exact next steps so development can resume at any time without loss of context.
+Fluxer MCP `v1.0.0` is complete, built, linted, typechecked, and tested. Use this guide to maintain, extend, or release future versions without losing architectural context.
 
-## Repository Layout
+## Repository Architecture
 
-- `packages/mcp-core` (`@fluxer-mcp/core`): Native Fluxer MCP core library (config, Fluxer constants, Fluxer REST + discovery + resilience, Fluxer Gateway, permission evaluator, middleware pipeline, 173 typed tools, MCP server & progressive discovery).
-- `packages/mcp-server` (`@fluxer-mcp/cli`): CLI (`fluxer-mcp` / `fluxer-mcp-server`), stdio & Streamable HTTP transports, client config snippet generators (Claude Code, Claude Desktop, Codex, Cursor, VS Code, Windsurf, Cline, Roo Code, Continue, Zed, OpenCode, Generic), profiles, `doctor`, `smoke`, `setup`, `catalog`.
-- `packages/mcp-server-mocks` (`@fluxer-mcp/server-mocks`): MSW v2 mock handlers for Fluxer API v1 and `/.well-known/fluxer`.
-- `docs/`: Comprehensive user, self-hosting, Docker, permissions, tool reference, examples, limitations, and troubleshooting documentation.
+- `packages/mcp-core` (`@fluxer-mcp/core`):
+  - `src/fluxer/constants.ts`: Verified Fluxer API v1 constants, 41 permission bits, 13 channel types, 38 audit log actions, gateway opcodes, and `FluxerRoutes`.
+  - `src/fluxer/rest.ts`: Native Fluxer HTTP client supporting Cloud & self-hosted `FLUXER_API_URL`, `/.well-known/fluxer` discovery caching, strict TLS (`FLUXER_CA_CERT_PATH`), `X-Audit-Log-Reason`, `@fluxerjs/rest` error types, and Cockatiel resilience.
+  - `src/fluxer/gateway.ts`: Native Fluxer WebSocket Gateway client (no Discord intents required).
+  - `src/fluxer/permissions.ts`: Exact Fluxer effective permission evaluator & trace engine.
+  - `src/middleware.ts`: Category allowlist, strict Zod validation, default guild, `ALLOWED_GUILDS` (with channel-to-guild verification), `MCP_WRITE_MODE=preview`, `MCP_DM_CONSENT_MODE=require`, `MCP_DRY_RUN` + `__confirm: true`, and redacted audit sink.
+  - `src/state.ts`: SHA-256 + HMAC-signed local state storage for blueprints, change plans, backups, raid-shield snapshots, and durable workflows.
+  - `src/tools/`: 172 typed tools across 20 categories + `src/server.ts` (full & progressive surfaces, resources, prompts, credential-free catalog server).
+- `packages/mcp-server` (`@fluxer-mcp/cli`):
+  - `src/cli.ts`: `fluxer-mcp` CLI (`serve`, `catalog`, `doctor`, `smoke`, `setup`, `init`, `profile`).
+  - `src/transports/stdio.ts` & `src/transports/http.ts`: Stdio and Bearer-authenticated Streamable HTTP transports.
+  - `src/lib/client-snippets.ts` & `src/lib/profiles.ts`: 12 AI client generators + non-secret profile management.
+- `packages/mcp-server-mocks` (`@fluxer-mcp/server-mocks`): MSW v2 Fluxer API v1 handlers.
 
-## Non-Negotiable Technical Invariants
+## Verification Checklist Before Any Release
 
-1. **Zero Discord runtime dependencies**: No `discord.js`, no `@discordjs/rest`, no `discord-api-types`. All REST, routes, and types target Fluxer API v1 natively (`@fluxerjs/rest`, `@fluxerjs/types`, plus verified Fluxer constants from `fluxerapp/fluxer`).
-2. **Zero invented endpoints**: Every REST call maps 1:1 to a verified path in Fluxer OpenAPI 3.1.0 (`https://api.fluxer.app/v1/openapi.json`).
-3. **Cloud + Self-Hosted parity**: `FLUXER_API_URL` defaults to `https://api.fluxer.app`, supports any self-hosted base URL, queries `/.well-known/fluxer` for feature/limit/endpoint discovery, supports `FLUXER_CA_CERT_PATH` for private CAs, and **never disables TLS verification by default**.
-4. **Safety by default**:
-   - `MCP_WRITE_MODE=preview` blocks all mutating calls with a preview.
-   - `MCP_DRY_RUN=true` (default) blocks destructive tools (`__confirm: true` + `MCP_DRY_RUN=false` required).
-   - `ALLOWED_GUILDS` enforces strict guild allowlisting with channel-to-guild verification.
-   - `FLUXER_EXPECTED_BOT_ID` locks the server to one bot identity.
-   - Tokens and webhook secrets are redacted from all logs and audit events.
-5. **Attribution**: Apache-2.0 license retained; `NOTICE` credits `cappyeo/discord-mcp` and all upstream contributors.
+```bash
+pnpm install
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm catalog:check
+```
 
-## Next Immediate Steps
+## Future Enhancement Ideas (When Fluxer API Adds Them)
 
-1. Rebrand workspace manifests and install Fluxer dependencies (`@fluxerjs/rest`, `@fluxerjs/types`).
-2. Build `@fluxer-mcp/core` runtime foundation (`config`, `fluxer/constants`, `fluxer/rest`, `fluxer/gateway`, `fluxer/permissions`, `errors`, `middleware`, `audit`, `tools/_lib`).
-3. Implement all 173 tools across 17 categories + `server.ts` (full + progressive surfaces + resources + prompts).
-4. Implement `@fluxer-mcp/cli` + `@fluxer-mcp/server-mocks` + full Vitest suite.
-5. Finalize Docker, CI, complete docs, and run full verification gate.
+- Server-side AutoMod rules (if Fluxer introduces `/guilds/{id}/auto-moderation/rules`)
+- Native Guild Scheduled Events & Polls (when added to Fluxer OpenAPI)
+- Presigned multipart file attachment uploads helper tool wrapping `POST /channels/{id}/attachments` + `/complete`
+- Optional OpenTelemetry OTLP exporter integration

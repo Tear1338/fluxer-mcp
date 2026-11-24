@@ -1,13 +1,13 @@
 export {
   type AuditEvent,
   type AuditSink,
+  createAuditSink,
   DEFAULT_AUDIT_FILE,
   FileAuditSink,
   NoopAuditSink,
-  StderrAuditSink,
-  createAuditSink,
   redactArgs,
   redactRoute,
+  StderrAuditSink,
 } from './audit.js';
 export {
   type Config,
@@ -19,15 +19,15 @@ export {
   stripAuthPrefix,
 } from './config.js';
 export {
+  buildProgressiveMetaTools,
+  classifyToolRisk,
   PROGRESSIVE_ARCHITECT_TOOL_NAME,
   PROGRESSIVE_DESTRUCTIVE_TOOL_NAME,
   PROGRESSIVE_READ_TOOL_NAME,
   PROGRESSIVE_SEARCH_TOOL_NAME,
   PROGRESSIVE_WRITE_TOOL_NAME,
-  type ToolSearchResult,
-  buildProgressiveMetaTools,
-  classifyToolRisk,
   searchTools,
+  type ToolSearchResult,
 } from './discovery.js';
 export {
   BulkheadFullError,
@@ -40,13 +40,13 @@ export {
   FluxerNotFoundError,
   FluxerPermissionError,
   type FormatErrorContext,
+  formatErrorForUser,
   GuildNotAllowedError,
   GuildScopeUnresolvedError,
   ScopeRejectedError,
   ValidationError,
   type ValidationIssue,
   WritePreview,
-  formatErrorForUser,
 } from './errors.js';
 export {
   ALL_FLUXER_PERMISSIONS,
@@ -56,19 +56,19 @@ export {
   CRITICAL_EVERYONE_PERMISSIONS,
   DEFAULT_FLUXER_PERMISSIONS,
   ELEVATED_FLUXER_PERMISSIONS,
-  FLUXER_CHANNEL_TYPES,
   FLUXER_CHANNEL_TYPE_NAMES,
   FLUXER_CHANNEL_TYPE_VALUES,
+  FLUXER_CHANNEL_TYPES,
   FLUXER_DEFAULT_API_URL,
   FLUXER_DEFAULT_API_VERSION,
   FLUXER_DEFAULT_WEBAPP_URL,
   FLUXER_GUILD_CREATABLE_CHANNEL_TYPES,
-  FLUXER_PERMISSIONS,
   FLUXER_PERMISSION_NAMES,
+  FLUXER_PERMISSIONS,
   FLUXER_THREAD_CHANNEL_TYPES,
-  FluxerRoutes,
   type FluxerChannelType,
   type FluxerPermissionName,
+  FluxerRoutes,
   GATEWAY_IDENTIFY_FLAGS,
   GATEWAY_OPCODES,
   GUILD_EXPLICIT_CONTENT_FILTER,
@@ -83,40 +83,40 @@ export {
   THREAD_AUTO_ARCHIVE_DURATIONS,
 } from './fluxer/constants.js';
 export {
+  createFluxerGatewayClient,
   type GatewayBotInfo,
   type GatewayClient,
   type GatewayClientOptions,
-  createFluxerGatewayClient,
 } from './fluxer/gateway.js';
 export {
-  type ChannelLike,
-  type EffectivePermissionEvaluation,
-  type OverwriteLike,
-  type PermissionTraceStep,
-  type RoleLike,
   applyOverwrite,
+  type ChannelLike,
   compareRolesDesc,
   computeBaseGuildPermissions,
   decodePermissionNames,
+  type EffectivePermissionEvaluation,
   encodePermissionNames,
   evaluateChannelPermissions,
   findDangerousPermissions,
   getHighestRolePosition,
   hasPermissionBit,
   isThreadChannelType,
+  type OverwriteLike,
+  type PermissionTraceStep,
   parsePermissionBits,
+  type RoleLike,
 } from './fluxer/permissions.js';
 export {
+  buildResiliencePolicy,
+  classifyFluxerError,
+  configureCustomCaIfNeeded,
   type FluxerInstanceDiscovery,
   type FluxerRequestOptions,
   FluxerRestClient,
   type FluxerRestClientOptions,
   FluxerRetryableError,
-  buildResiliencePolicy,
-  classifyFluxerError,
-  configureCustomCaIfNeeded,
 } from './fluxer/rest.js';
-export { REDACT_PATHS, createLogger } from './logger.js';
+export { createLogger, REDACT_PATHS } from './logger.js';
 export {
   ALWAYS_ALLOWED_CATEGORIES,
   type BotIdentity,
@@ -127,27 +127,27 @@ export {
 export {
   type BuildServerDeps,
   type BuildServerResult,
-  VERSION,
   buildCatalogServer,
   buildServer,
+  VERSION,
 } from './server.js';
 export {
-  type SignedRecord,
   canonicalize,
   deriveSigningSecret,
   listSignedStateIds,
   loadSignedState,
   resolveStateDirectory,
+  type SignedRecord,
   saveSignedState,
   sha256Digest,
 } from './state.js';
-export {
-  type FluxerCommunityBlueprint,
-  compileFluxerBlueprint,
-} from './tools/blueprint.js';
-export { ALL_FLUXER_TOOLS, FLUXER_TOOL_CATEGORIES } from './tools/index.js';
 export type {
   FluxerTool,
   ToolAnnotations,
   ToolRuntimeContext,
 } from './tools/_lib/types.js';
+export {
+  compileFluxerBlueprint,
+  type FluxerCommunityBlueprint,
+} from './tools/blueprint.js';
+export { ALL_FLUXER_TOOLS, FLUXER_TOOL_CATEGORIES } from './tools/index.js';

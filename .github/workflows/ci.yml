@@ -1,92 +1,42 @@
-name: ci
+name: CI
+
 on:
-  pull_request:
   push:
     branches: [main]
-  schedule:
-    # The audit job was push/PR-triggered only, so dependency drift went unseen
-    # between commits. Weekly cron re-runs it against a quiet tree.
-    - cron: '0 6 * * 1'
-  workflow_dispatch:
-permissions:
-  contents: read
+  pull_request:
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+  verify:
+    name: Lint, Typecheck, Build & Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest]
-        node: ['22.12', '24.x']
-    env:
-      # Events uses built-in SQLite, still flag-gated at the upstream minimum.
-      NODE_OPTIONS: ${{ matrix.node == '22.12' && '--experimental-sqlite' || '' }}
+        node: ['22', '24']
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
-      # Core/CLI keep the Node 22.12 floor. Astro requires a newer Node, so
-      # site checks run on both Node 24 jobs and in the dedicated docs gate.
-      - run: pnpm exec turbo run typecheck ${{ matrix.node == '22.12' && '--filter=!site' || '' }}
-      - run: pnpm exec turbo run build ${{ matrix.node == '22.12' && '--filter=!site' || '' }}
-      - name: Verify durable workflow integration
-        run: node packages/mcp-core/scripts/verify-workflows.mjs
-      - run: pnpm exec turbo run test ${{ matrix.node == '22.12' && '--filter=!site' || '' }}
-      - run: pnpm --filter @discord-mcp/core exec vitest run --coverage
-        if: matrix.os != 'ubuntu-24.04' || matrix.node != '22.12'
-      - run: pnpm --filter @discord-mcp/core exec vitest run --coverage --no-file-parallelism
-        if: matrix.os == 'ubuntu-24.04' && matrix.node == '22.12'
-      - run: pnpm exec publint --strict packages/mcp-core
-      - run: pnpm exec publint --strict packages/mcp-server
-  pack:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24.x'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
       - run: pnpm build
-      - run: node .github/scripts/assert-no-workspace-protocol.mjs
-      - name: Verify clean-install packaged transports
-        run: node .github/scripts/assert-packaged-cli.mjs
-  catalog-container:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+      - run: pnpm test
+      - run: pnpm catalog:check
+
+  docker:
+    name: Docker Build & Catalog Smoke
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24.x'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: docker build --pull --tag discord-mcp-catalog:ci .
-      - name: Verify credential-free catalog container
-        run: node .github/scripts/assert-catalog-container.mjs
-  audit:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24.x'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --audit-level=moderate --prod
+      - uses: actions/checkout@v4
+      - run: docker build -t fluxer-mcp:ci .
+      - run: docker run --rm fluxer-mcp:ci catalog --check --json

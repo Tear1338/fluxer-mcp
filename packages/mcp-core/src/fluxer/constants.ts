@@ -139,9 +139,7 @@ export const FLUXER_CHANNEL_TYPES = {
 
 export type FluxerChannelType = (typeof FLUXER_CHANNEL_TYPES)[keyof typeof FLUXER_CHANNEL_TYPES];
 
-export const FLUXER_CHANNEL_TYPE_VALUES = [
-  0, 1, 2, 3, 4, 5, 10, 11, 12, 15, 16, 998, 999,
-] as const;
+export const FLUXER_CHANNEL_TYPE_VALUES = [0, 1, 2, 3, 4, 5, 10, 11, 12, 15, 16, 998, 999] as const;
 
 export const FLUXER_GUILD_CREATABLE_CHANNEL_TYPES = [0, 2, 4, 5, 15, 16, 998] as const;
 

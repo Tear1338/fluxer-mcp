@@ -1,12 +1,6 @@
 import { z } from 'zod';
 import { FluxerRoutes } from '../fluxer/constants.js';
-import {
-  ChannelId,
-  type FluxerTool,
-  defineTool,
-  dualResult,
-  wrapUntrusted,
-} from './_lib/types.js';
+import { ChannelId, defineTool, dualResult, type FluxerTool, wrapUntrusted } from './_lib/types.js';
 
 interface RawMsg {
   readonly id: string;
@@ -15,10 +9,22 @@ interface RawMsg {
   readonly author?: { readonly id: string; readonly username?: string; readonly bot?: boolean };
 }
 
-const SPAM_PATTERNS: ReadonlyArray<{ readonly label: string; readonly re: RegExp; readonly weight: number }> = [
+const SPAM_PATTERNS: ReadonlyArray<{
+  readonly label: string;
+  readonly re: RegExp;
+  readonly weight: number;
+}> = [
   { label: 'mass_mention', re: /@(everyone|here)/i, weight: 25 },
-  { label: 'invite_link', re: /(fluxer\.gg|discord\.gg|discord\.com\/invite)\/[a-z0-9-]+/i, weight: 20 },
-  { label: 'suspicious_giveaway', re: /(free\s+(nitro|plutonium|crypto|airdrop)|claim\s+now)/i, weight: 40 },
+  {
+    label: 'invite_link',
+    re: /(fluxer\.gg|discord\.gg|discord\.com\/invite)\/[a-z0-9-]+/i,
+    weight: 20,
+  },
+  {
+    label: 'suspicious_giveaway',
+    re: /(free\s+(nitro|plutonium|crypto|airdrop)|claim\s+now)/i,
+    weight: 40,
+  },
   { label: 'url_shortener', re: /\b(bit\.ly|tinyurl\.com|t\.co|rb\.gy)\//i, weight: 15 },
   { label: 'excessive_caps', re: /[A-Z]{20,}/, weight: 15 },
 ];
@@ -34,7 +40,12 @@ export const intelligenceTools: readonly FluxerTool[] = [
       channel_id: ChannelId,
       limit: z.number().int().min(5).max(100).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const msgs = await ctx.rest.get<RawMsg[]>(FluxerRoutes.channelMessages(args.channel_id), {
         query: { limit: args.limit ?? 50 },
@@ -42,7 +53,25 @@ export const intelligenceTools: readonly FluxerTool[] = [
       const byAuthor = new Map<string, number>();
       const wordCounts = new Map<string, number>();
       let linkCount = 0;
-      const stop = new Set(['the', 'and', 'for', 'that', 'this', 'with', 'have', 'from', 'vous', 'pour', 'dans', 'avec', 'plus', 'tout', 'les', 'des', 'une']);
+      const stop = new Set([
+        'the',
+        'and',
+        'for',
+        'that',
+        'this',
+        'with',
+        'have',
+        'from',
+        'vous',
+        'pour',
+        'dans',
+        'avec',
+        'plus',
+        'tout',
+        'les',
+        'des',
+        'une',
+      ]);
 
       for (const m of msgs) {
         const who = m.author?.username ?? m.author?.id ?? 'unknown';
@@ -92,7 +121,12 @@ export const intelligenceTools: readonly FluxerTool[] = [
       channel_id: ChannelId,
       limit: z.number().int().min(1).max(100).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const msgs = await ctx.rest.get<RawMsg[]>(FluxerRoutes.channelMessages(args.channel_id), {
         query: { limit: args.limit ?? 30 },
@@ -101,9 +135,11 @@ export const intelligenceTools: readonly FluxerTool[] = [
         const text = m.content ?? '';
         let label: string = 'general';
         if (SPAM_PATTERNS.some((p) => p.re.test(text))) label = 'moderation_risk';
-        else if (/\b(bug|error|crash|broken|fail|exception|issue|erreur)\b/i.test(text)) label = 'bug_report';
+        else if (/\b(bug|error|crash|broken|fail|exception|issue|erreur)\b/i.test(text))
+          label = 'bug_report';
         else if (/\?|\b(how|why|help|comment|pourquoi|aide)\b/i.test(text)) label = 'question';
-        else if (/\b(release|update|announce|changelog|lancement)\b/i.test(text)) label = 'announcement';
+        else if (/\b(release|update|announce|changelog|lancement)\b/i.test(text))
+          label = 'announcement';
         else if (/\b(suggest|feature|idea|feedback|amélioration)\b/i.test(text)) label = 'feedback';
         return { message_id: m.id, author_id: m.author?.id ?? null, label };
       });
@@ -126,7 +162,12 @@ export const intelligenceTools: readonly FluxerTool[] = [
       channel_id: ChannelId,
       limit: z.number().int().min(1).max(100).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const msgs = await ctx.rest.get<RawMsg[]>(FluxerRoutes.channelMessages(args.channel_id), {
         query: { limit: args.limit ?? 50 },
@@ -170,7 +211,12 @@ export const intelligenceTools: readonly FluxerTool[] = [
       channel_id: ChannelId.optional().describe('Or scan recent messages in a Fluxer channel'),
       limit: z.number().int().min(5).max(100).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const items: Array<{ id: string; author_id: string | null; text: string }> = [];
       if (args.text !== undefined) {
@@ -191,7 +237,13 @@ export const intelligenceTools: readonly FluxerTool[] = [
         if (norm.length >= 12) duplicateCounts.set(norm, (duplicateCounts.get(norm) ?? 0) + 1);
       }
 
-      const flagged: Array<{ id: string; author_id: string | null; score: number; signals: string[]; recommended_action: string }> = [];
+      const flagged: Array<{
+        id: string;
+        author_id: string | null;
+        score: number;
+        signals: string[];
+        recommended_action: string;
+      }> = [];
       for (const item of items) {
         let score = 0;
         const signals: string[] = [];
@@ -208,8 +260,18 @@ export const intelligenceTools: readonly FluxerTool[] = [
         }
         if (score > 0) {
           const action =
-            score >= 60 ? 'ban_or_timeout_and_bulk_delete' : score >= 30 ? 'timeout_and_delete' : 'review';
-          flagged.push({ id: item.id, author_id: item.author_id, score: Math.min(100, score), signals, recommended_action: action });
+            score >= 60
+              ? 'ban_or_timeout_and_bulk_delete'
+              : score >= 30
+                ? 'timeout_and_delete'
+                : 'review';
+          flagged.push({
+            id: item.id,
+            author_id: item.author_id,
+            score: Math.min(100, score),
+            signals,
+            recommended_action: action,
+          });
         }
       }
 
@@ -232,7 +294,12 @@ export const intelligenceTools: readonly FluxerTool[] = [
       tone: z.enum(['friendly', 'professional', 'concise', 'moderation']).optional(),
       context_limit: z.number().int().min(1).max(30).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const msgs = await ctx.rest.get<RawMsg[]>(FluxerRoutes.channelMessages(args.channel_id), {
         query: { limit: args.context_limit ?? 10 },

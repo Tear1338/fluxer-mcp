@@ -1,17 +1,18 @@
 import { readFileSync } from 'node:fs';
-import { FluxerAPIError, HTTPError, REST, RateLimitError, type RequestOptions } from '@fluxerjs/rest';
+import { FluxerAPIError, HTTPError, RateLimitError } from '@fluxerjs/rest';
+import type { APIErrorBody, RateLimitErrorBody } from '@fluxerjs/types';
 import {
   BrokenCircuitError,
   BulkheadRejectedError,
-  ConsecutiveBreaker,
-  ExponentialBackoff,
-  type IPolicy,
-  TimeoutStrategy,
   bulkhead,
+  ConsecutiveBreaker,
   circuitBreaker,
+  ExponentialBackoff,
   handleType,
+  type IPolicy,
   noop,
   retry,
+  TimeoutStrategy,
   timeout,
   wrap,
 } from 'cockatiel';
@@ -131,11 +132,7 @@ export function classifyFluxerError(
     if (inner instanceof Error) {
       const innerCode = (inner as Error & { code?: unknown }).code;
       if (typeof innerCode === 'string' && RETRYABLE_NET_CODES.has(innerCode)) {
-        return new FluxerRetryableError(
-          err,
-          null,
-          !(isPost && AMBIGUOUS_NET_CODES.has(innerCode)),
-        );
+        return new FluxerRetryableError(err, null, !(isPost && AMBIGUOUS_NET_CODES.has(innerCode)));
       }
     }
   }
@@ -214,29 +211,28 @@ function appendQuery(
   return route.includes('?') ? `${route}&${qs}` : `${route}?${qs}`;
 }
 
-function buildRestOptions(
-  opts?: FluxerRequestOptions,
-  policySignal?: AbortSignal,
-): RequestOptions {
-  const headers: Record<string, string> = { ...(opts?.headers ?? {}) };
-  if (opts?.reason !== undefined && opts.reason.trim().length > 0) {
-    headers['X-Audit-Log-Reason'] = encodeURIComponent(opts.reason.trim());
+function resolveFluxerUrl(
+  apiUrl: string,
+  apiVersion: string,
+  route: string,
+  unversioned?: boolean,
+): string {
+  if (route.startsWith('http://') || route.startsWith('https://')) return route;
+  const origin = apiUrl.replace(/\/+$/, '');
+  const normalized = route.startsWith('/') ? route : `/${route}`;
+  if (unversioned || normalized.startsWith('/.well-known/')) {
+    return `${origin}${normalized}`;
   }
-  const callerSignal = opts?.signal;
-  const signal =
-    policySignal === undefined
-      ? callerSignal
-      : callerSignal === undefined
-        ? policySignal
-        : AbortSignal.any([policySignal, callerSignal]);
+  return `${origin}/v${apiVersion}${normalized}`;
+}
 
-  const out: RequestOptions = {};
-  if (opts?.body !== undefined) out.body = opts.body;
-  if (Object.keys(headers).length > 0) out.headers = headers;
-  if (opts?.auth !== undefined) out.auth = opts.auth;
-  if (opts?.unversioned !== undefined) out.unversioned = opts.unversioned;
-  if (signal !== undefined) out.signal = signal;
-  return out;
+function isApiErrorBody(val: unknown): val is APIErrorBody {
+  if (typeof val !== 'object' || val === null) return false;
+  const rec = val as Record<string, unknown>;
+  return (
+    typeof rec.message === 'string' &&
+    (typeof rec.code === 'string' || typeof rec.code === 'number')
+  );
 }
 
 export interface FluxerRestClientOptions {
@@ -253,17 +249,19 @@ export interface FluxerRestClientOptions {
 }
 
 /**
- * Native Fluxer API v1 REST client wrapping `@fluxerjs/rest` with:
- * - Cloud & self-hosted base URL support
+ * Native Fluxer API v1 REST client with:
+ * - Cloud & self-hosted base URL support (`FLUXER_API_URL`)
  * - `/.well-known/fluxer` instance discovery & capability caching
  * - Strict TLS (optional custom CA via `FLUXER_CA_CERT_PATH`, never disabling verification)
  * - Query parameter & `X-Audit-Log-Reason` header support
+ * - `@fluxerjs/rest` error types (`FluxerAPIError`, `RateLimitError`, `HTTPError`)
  * - Cockatiel retry, circuit breaker, bulkhead, and timeout resilience
  */
 export class FluxerRestClient {
   readonly apiUrl: string;
   readonly apiVersion: string;
-  private readonly rest: REST;
+  private readonly authPrefix: 'Bot' | 'Bearer';
+  private readonly token: string | null;
   private readonly policy: IPolicy;
   private readonly circuitHalfOpenAfterMs: number;
   private readonly configuredWebappUrl?: string;
@@ -273,27 +271,17 @@ export class FluxerRestClient {
   constructor(options: FluxerRestClientOptions = {}) {
     this.apiUrl = (options.apiUrl ?? FLUXER_DEFAULT_API_URL).replace(/\/+$/, '');
     this.apiVersion = options.apiVersion ?? FLUXER_DEFAULT_API_VERSION;
+    this.authPrefix = options.authPrefix ?? 'Bot';
+    this.token = options.token ? stripAuthPrefix(options.token) : null;
     if (options.webappUrl !== undefined) this.configuredWebappUrl = options.webappUrl;
     this.circuitHalfOpenAfterMs = options.circuitHalfOpenAfterMs ?? 60_000;
 
     configureCustomCaIfNeeded(options.caCertPath, options.logger);
-
-    // Keep retries=0 inside @fluxerjs/rest so Cockatiel is the single resilience owner.
-    this.rest = new REST({
-      api: this.apiUrl,
-      version: this.apiVersion,
-      authPrefix: options.authPrefix ?? 'Bot',
-      retries: 0,
-      timeout: options.timeoutMs ?? 30_000,
-    });
-    if (options.token) {
-      this.rest.setToken(stripAuthPrefix(options.token));
-    }
     this.policy = options.policy ?? noop;
   }
 
   static fromConfig(config: Config, logger?: Logger): FluxerRestClient {
-    const opts: FluxerRestClientOptions = {
+    return new FluxerRestClient({
       apiUrl: config.FLUXER_API_URL,
       apiVersion: config.FLUXER_API_VERSION,
       authPrefix: config.FLUXER_AUTH_PREFIX,
@@ -301,19 +289,7 @@ export class FluxerRestClient {
       timeoutMs: config.MCP_TIMEOUT_DEFAULT_MS,
       circuitHalfOpenAfterMs: config.MCP_CIRCUIT_HALF_OPEN_AFTER_MS,
       policy: buildResiliencePolicy(config, logger),
-    };
-    if (config.FLUXER_WEBAPP_URL !== undefined) {
-      return new FluxerRestClient({
-        ...opts,
-        webappUrl: config.FLUXER_WEBAPP_URL,
-        ...(config.FLUXER_CA_CERT_PATH !== undefined
-          ? { caCertPath: config.FLUXER_CA_CERT_PATH }
-          : {}),
-        ...(logger !== undefined ? { logger } : {}),
-      });
-    }
-    return new FluxerRestClient({
-      ...opts,
+      ...(config.FLUXER_WEBAPP_URL !== undefined ? { webappUrl: config.FLUXER_WEBAPP_URL } : {}),
       ...(config.FLUXER_CA_CERT_PATH !== undefined
         ? { caCertPath: config.FLUXER_CA_CERT_PATH }
         : {}),
@@ -322,11 +298,91 @@ export class FluxerRestClient {
   }
 
   get baseUrl(): string {
-    return this.rest.baseUrl;
+    return `${this.apiUrl}/v${this.apiVersion}`;
+  }
+
+  private async performFetch<T>(
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    route: string,
+    opts: FluxerRequestOptions | undefined,
+    policySignal: AbortSignal,
+  ): Promise<T> {
+    const url = resolveFluxerUrl(this.apiUrl, this.apiVersion, route, opts?.unversioned);
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'User-Agent': 'fluxer-mcp/1.0.0 (+https://github.com/fluxer-mcp/fluxer-mcp)',
+      ...(opts?.headers ?? {}),
+    };
+    if (opts?.auth !== false && this.token) {
+      headers.Authorization = `${this.authPrefix} ${this.token}`;
+    }
+    if (opts?.reason !== undefined && opts.reason.trim().length > 0) {
+      headers['X-Audit-Log-Reason'] = encodeURIComponent(opts.reason.trim());
+    }
+
+    let serializedBody: string | undefined;
+    if (opts?.body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+      serializedBody = JSON.stringify(opts.body);
+    }
+
+    const callerSignal = opts?.signal;
+    const signal =
+      callerSignal === undefined ? policySignal : AbortSignal.any([policySignal, callerSignal]);
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      ...(serializedBody !== undefined ? { body: serializedBody } : {}),
+      signal,
+    });
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const text = await response.text();
+    let parsed: unknown;
+    if (text.length > 0) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = undefined;
+      }
+    }
+
+    if (!response.ok) {
+      const ctx = { method, path: route };
+      if (response.status === 429) {
+        const retryHeader = Number(response.headers.get('retry-after') ?? 0);
+        const bodyRetry =
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          typeof (parsed as { retry_after?: unknown }).retry_after === 'number'
+            ? (parsed as { retry_after: number }).retry_after
+            : undefined;
+        const rlBody: RateLimitErrorBody = {
+          code: 'RATE_LIMITED',
+          message: (isApiErrorBody(parsed) ? parsed.message : null) ?? 'Rate limited by Fluxer API',
+          retry_after: bodyRetry ?? (Number.isFinite(retryHeader) ? retryHeader : 1),
+          global:
+            typeof parsed === 'object' &&
+            parsed !== null &&
+            (parsed as { global?: unknown }).global === true,
+        };
+        throw new RateLimitError(rlBody, 429, ctx);
+      }
+      if (isApiErrorBody(parsed)) {
+        throw new FluxerAPIError(parsed, response.status, ctx);
+      }
+      throw new HTTPError(response.status, text || null, ctx);
+    }
+
+    return (parsed !== undefined ? parsed : text) as T;
   }
 
   private async execute<T>(
-    method: 'get' | 'post' | 'patch' | 'put' | 'delete',
+    method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     route: string,
     opts?: FluxerRequestOptions,
   ): Promise<T> {
@@ -334,14 +390,7 @@ export class FluxerRestClient {
     try {
       return (await this.policy.execute(async ({ signal }) => {
         try {
-          const reqOpts = buildRestOptions(opts, signal);
-          if (method === 'get') {
-            return await this.rest.get<T>(fullRoute, reqOpts);
-          }
-          if (method === 'post') return await this.rest.post<T>(fullRoute, reqOpts);
-          if (method === 'patch') return await this.rest.patch<T>(fullRoute, reqOpts);
-          if (method === 'put') return await this.rest.put<T>(fullRoute, reqOpts);
-          return await this.rest.delete<T>(fullRoute, reqOpts);
+          return await this.performFetch<T>(method, fullRoute, opts, signal);
         } catch (err) {
           const retryable = classifyFluxerError(err, { method });
           if (retryable !== null) throw retryable;
@@ -363,23 +412,23 @@ export class FluxerRestClient {
   }
 
   get<T = unknown>(route: string, opts?: FluxerRequestOptions): Promise<T> {
-    return this.execute<T>('get', route, opts);
+    return this.execute<T>('GET', route, opts);
   }
 
   post<T = unknown>(route: string, opts?: FluxerRequestOptions): Promise<T> {
-    return this.execute<T>('post', route, opts);
+    return this.execute<T>('POST', route, opts);
   }
 
   patch<T = unknown>(route: string, opts?: FluxerRequestOptions): Promise<T> {
-    return this.execute<T>('patch', route, opts);
+    return this.execute<T>('PATCH', route, opts);
   }
 
   put<T = unknown>(route: string, opts?: FluxerRequestOptions): Promise<T> {
-    return this.execute<T>('put', route, opts);
+    return this.execute<T>('PUT', route, opts);
   }
 
   delete<T = unknown>(route: string, opts?: FluxerRequestOptions): Promise<T> {
-    return this.execute<T>('delete', route, opts);
+    return this.execute<T>('DELETE', route, opts);
   }
 
   /**

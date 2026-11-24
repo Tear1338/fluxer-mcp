@@ -3,13 +3,13 @@ import { ExternalServiceError } from '../errors.js';
 import { FluxerRoutes } from '../fluxer/constants.js';
 import {
   AuditReasonSchema,
+  defineTool,
+  dualResult,
   EmojiId,
   type FluxerTool,
   GuildId,
-  StickerId,
-  defineTool,
-  dualResult,
   pickDefined,
+  StickerId,
 } from './_lib/types.js';
 
 export const expressionTools: readonly FluxerTool[] = [
@@ -20,9 +20,16 @@ export const expressionTools: readonly FluxerTool[] = [
     guildScoped: true,
     description: 'List all custom emojis in a Fluxer guild (`GET /guilds/{guild_id}/emojis`).',
     inputSchema: { guild_id: GuildId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const emojis = await ctx.rest.get<Array<Record<string, unknown>>>(FluxerRoutes.guildEmojis(args.guild_id));
+      const emojis = await ctx.rest.get<Array<Record<string, unknown>>>(
+        FluxerRoutes.guildEmojis(args.guild_id),
+      );
       return dualResult({
         text: `Listed ${emojis.length} custom emoji(s) in guild \`${args.guild_id}\`.`,
         data: { guild_id: args.guild_id, count: emojis.length, emojis },
@@ -35,19 +42,35 @@ export const expressionTools: readonly FluxerTool[] = [
     category: 'emojis',
     requiredPermissions: ['CREATE_EXPRESSIONS'],
     guildScoped: true,
-    description: 'Create a custom guild emoji (`POST /guilds/{guild_id}/emojis`) using a base64 data URI image.',
+    description:
+      'Create a custom guild emoji (`POST /guilds/{guild_id}/emojis`) using a base64 data URI image.',
     inputSchema: {
       guild_id: GuildId,
-      name: z.string().min(2).max(32).regex(/^[A-Za-z0-9_]+$/),
-      image: z.string().startsWith('data:image/').describe('Base64 image data URI (PNG/JPEG/GIF/WebP)'),
+      name: z
+        .string()
+        .min(2)
+        .max(32)
+        .regex(/^[A-Za-z0-9_]+$/),
+      image: z
+        .string()
+        .startsWith('data:image/')
+        .describe('Base64 image data URI (PNG/JPEG/GIF/WebP)'),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const emoji = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.guildEmojis(args.guild_id), {
-        body: { name: args.name, image: args.image },
-        ...(args.audit_reason ? { reason: args.audit_reason } : {}),
-      });
+      const emoji = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.guildEmojis(args.guild_id),
+        {
+          body: { name: args.name, image: args.image },
+          ...(args.audit_reason ? { reason: args.audit_reason } : {}),
+        },
+      );
       return dualResult({
         text: `Created emoji **:${String(emoji.name ?? args.name)}:** (\`emoji:${String(emoji.id ?? '')}\`).`,
         data: emoji,
@@ -60,24 +83,37 @@ export const expressionTools: readonly FluxerTool[] = [
     category: 'emojis',
     requiredPermissions: ['CREATE_EXPRESSIONS'],
     guildScoped: true,
-    description: 'Fluxer-native: bulk-create multiple custom emojis in one API call (`POST /guilds/{guild_id}/emojis/bulk`).',
+    description:
+      'Fluxer-native: bulk-create multiple custom emojis in one API call (`POST /guilds/{guild_id}/emojis/bulk`).',
     inputSchema: {
       guild_id: GuildId,
       emojis: z
         .array(
           z.object({
-            name: z.string().min(2).max(32).regex(/^[A-Za-z0-9_]+$/),
+            name: z
+              .string()
+              .min(2)
+              .max(32)
+              .regex(/^[A-Za-z0-9_]+$/),
             image: z.string().startsWith('data:image/'),
           }),
         )
         .min(1)
         .max(50),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const res = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.guildEmojisBulk(args.guild_id), {
-        body: { emojis: args.emojis },
-      });
+      const res = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.guildEmojisBulk(args.guild_id),
+        {
+          body: { emojis: args.emojis },
+        },
+      );
       return dualResult({
         text: `Bulk-created ${args.emojis.length} emoji(s) in guild \`${args.guild_id}\`.`,
         data: res,
@@ -90,16 +126,25 @@ export const expressionTools: readonly FluxerTool[] = [
     category: 'emojis',
     requiredPermissions: ['CREATE_EXPRESSIONS'],
     guildScoped: true,
-    description: 'Fluxer-native: clone an existing Fluxer emoji by ID into the target guild (`POST /guilds/{guild_id}/emojis/clone`).',
+    description:
+      'Fluxer-native: clone an existing Fluxer emoji by ID into the target guild (`POST /guilds/{guild_id}/emojis/clone`).',
     inputSchema: {
       guild_id: GuildId,
       source_emoji_id: EmojiId,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const emoji = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.guildEmojisClone(args.guild_id), {
-        body: { source_emoji_id: args.source_emoji_id },
-      });
+      const emoji = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.guildEmojisClone(args.guild_id),
+        {
+          body: { source_emoji_id: args.source_emoji_id },
+        },
+      );
       return dualResult({
         text: `Cloned emoji \`${args.source_emoji_id}\` into guild \`${args.guild_id}\`.`,
         data: emoji,
@@ -116,10 +161,19 @@ export const expressionTools: readonly FluxerTool[] = [
     inputSchema: {
       guild_id: GuildId,
       emoji_id: EmojiId,
-      name: z.string().min(2).max(32).regex(/^[A-Za-z0-9_]+$/),
+      name: z
+        .string()
+        .min(2)
+        .max(32)
+        .regex(/^[A-Za-z0-9_]+$/),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const emoji = await ctx.rest.patch<Record<string, unknown>>(
         FluxerRoutes.guildEmoji(args.guild_id, args.emoji_id),
@@ -138,14 +192,20 @@ export const expressionTools: readonly FluxerTool[] = [
     requiredPermissions: ['MANAGE_EXPRESSIONS'],
     guildScoped: true,
     confirmRequired: true,
-    description: 'Delete a custom guild emoji (`DELETE /guilds/{guild_id}/emojis/{emoji_id}`). Supports Fluxer `purge` query flag. Confirmation-gated.',
+    description:
+      'Delete a custom guild emoji (`DELETE /guilds/{guild_id}/emojis/{emoji_id}`). Supports Fluxer `purge` query flag. Confirmation-gated.',
     inputSchema: {
       guild_id: GuildId,
       emoji_id: EmojiId,
       purge: z.boolean().optional(),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.delete(FluxerRoutes.guildEmoji(args.guild_id, args.emoji_id), {
         query: { purge: args.purge },
@@ -161,11 +221,19 @@ export const expressionTools: readonly FluxerTool[] = [
   defineTool({
     name: 'emojis_get_metadata',
     category: 'emojis',
-    description: 'Fluxer-native: get metadata for any custom emoji by ID (`GET /emojis/{emoji_id}/metadata`).',
+    description:
+      'Fluxer-native: get metadata for any custom emoji by ID (`GET /emojis/{emoji_id}/metadata`).',
     inputSchema: { emoji_id: EmojiId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const data = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.emojiMetadata(args.emoji_id));
+      const data = await ctx.rest.get<Record<string, unknown>>(
+        FluxerRoutes.emojiMetadata(args.emoji_id),
+      );
       return dualResult({ text: `Fetched metadata for emoji \`${args.emoji_id}\`.`, data });
     },
   }),
@@ -173,11 +241,19 @@ export const expressionTools: readonly FluxerTool[] = [
   defineTool({
     name: 'emojis_get_source',
     category: 'emojis',
-    description: 'Fluxer-native: look up the source guild of a custom emoji (`GET /emojis/{emoji_id}/source`).',
+    description:
+      'Fluxer-native: look up the source guild of a custom emoji (`GET /emojis/{emoji_id}/source`).',
     inputSchema: { emoji_id: EmojiId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const data = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.emojiSource(args.emoji_id));
+      const data = await ctx.rest.get<Record<string, unknown>>(
+        FluxerRoutes.emojiSource(args.emoji_id),
+      );
       return dualResult({ text: `Fetched source guild for emoji \`${args.emoji_id}\`.`, data });
     },
   }),
@@ -189,9 +265,16 @@ export const expressionTools: readonly FluxerTool[] = [
     guildScoped: true,
     description: 'List all custom stickers in a Fluxer guild (`GET /guilds/{guild_id}/stickers`).',
     inputSchema: { guild_id: GuildId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const stickers = await ctx.rest.get<Array<Record<string, unknown>>>(FluxerRoutes.guildStickers(args.guild_id));
+      const stickers = await ctx.rest.get<Array<Record<string, unknown>>>(
+        FluxerRoutes.guildStickers(args.guild_id),
+      );
       return dualResult({
         text: `Listed ${stickers.length} custom sticker(s) in guild \`${args.guild_id}\`.`,
         data: { guild_id: args.guild_id, count: stickers.length, stickers },
@@ -214,13 +297,21 @@ export const expressionTools: readonly FluxerTool[] = [
       image: z.string().startsWith('data:image/').describe('Base64 image data URI'),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, ['name', 'description', 'tags', 'image']);
-      const sticker = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.guildStickers(args.guild_id), {
-        body,
-        ...(args.audit_reason ? { reason: args.audit_reason } : {}),
-      });
+      const sticker = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.guildStickers(args.guild_id),
+        {
+          body,
+          ...(args.audit_reason ? { reason: args.audit_reason } : {}),
+        },
+      );
       return dualResult({
         text: `Created sticker **${String(sticker.name ?? args.name)}** (\`sticker:${String(sticker.id ?? '')}\`).`,
         data: sticker,
@@ -233,7 +324,8 @@ export const expressionTools: readonly FluxerTool[] = [
     category: 'stickers',
     requiredPermissions: ['CREATE_EXPRESSIONS'],
     guildScoped: true,
-    description: 'Fluxer-native: bulk-create guild stickers (`POST /guilds/{guild_id}/stickers/bulk`).',
+    description:
+      'Fluxer-native: bulk-create guild stickers (`POST /guilds/{guild_id}/stickers/bulk`).',
     inputSchema: {
       guild_id: GuildId,
       stickers: z
@@ -248,11 +340,19 @@ export const expressionTools: readonly FluxerTool[] = [
         .min(1)
         .max(50),
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const res = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.guildStickersBulk(args.guild_id), {
-        body: { stickers: args.stickers },
-      });
+      const res = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.guildStickersBulk(args.guild_id),
+        {
+          body: { stickers: args.stickers },
+        },
+      );
       return dualResult({
         text: `Bulk-created ${args.stickers.length} sticker(s) in guild \`${args.guild_id}\`.`,
         data: res,
@@ -265,13 +365,22 @@ export const expressionTools: readonly FluxerTool[] = [
     category: 'stickers',
     requiredPermissions: ['CREATE_EXPRESSIONS'],
     guildScoped: true,
-    description: 'Fluxer-native: clone an existing sticker by ID into the target guild (`POST /guilds/{guild_id}/stickers/clone`).',
+    description:
+      'Fluxer-native: clone an existing sticker by ID into the target guild (`POST /guilds/{guild_id}/stickers/clone`).',
     inputSchema: { guild_id: GuildId, source_sticker_id: StickerId },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const sticker = await ctx.rest.post<Record<string, unknown>>(FluxerRoutes.guildStickersClone(args.guild_id), {
-        body: { source_sticker_id: args.source_sticker_id },
-      });
+      const sticker = await ctx.rest.post<Record<string, unknown>>(
+        FluxerRoutes.guildStickersClone(args.guild_id),
+        {
+          body: { source_sticker_id: args.source_sticker_id },
+        },
+      );
       return dualResult({
         text: `Cloned sticker \`${args.source_sticker_id}\` into guild \`${args.guild_id}\`.`,
         data: sticker,
@@ -284,7 +393,8 @@ export const expressionTools: readonly FluxerTool[] = [
     category: 'stickers',
     requiredPermissions: ['MANAGE_EXPRESSIONS'],
     guildScoped: true,
-    description: 'Modify a Fluxer guild sticker\'s name, description, or tags (`PATCH /guilds/{guild_id}/stickers/{sticker_id}`).',
+    description:
+      "Modify a Fluxer guild sticker's name, description, or tags (`PATCH /guilds/{guild_id}/stickers/{sticker_id}`).",
     inputSchema: {
       guild_id: GuildId,
       sticker_id: StickerId,
@@ -293,7 +403,12 @@ export const expressionTools: readonly FluxerTool[] = [
       tags: z.array(z.string().max(32)).max(10).optional(),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const body = pickDefined(args, ['name', 'description', 'tags']);
       const sticker = await ctx.rest.patch<Record<string, unknown>>(
@@ -313,14 +428,20 @@ export const expressionTools: readonly FluxerTool[] = [
     requiredPermissions: ['MANAGE_EXPRESSIONS'],
     guildScoped: true,
     confirmRequired: true,
-    description: 'Delete a custom guild sticker (`DELETE /guilds/{guild_id}/stickers/{sticker_id}`). Confirmation-gated.',
+    description:
+      'Delete a custom guild sticker (`DELETE /guilds/{guild_id}/stickers/{sticker_id}`). Confirmation-gated.',
     inputSchema: {
       guild_id: GuildId,
       sticker_id: StickerId,
       purge: z.boolean().optional(),
       audit_reason: AuditReasonSchema,
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       await ctx.rest.delete(FluxerRoutes.guildSticker(args.guild_id, args.sticker_id), {
         query: { purge: args.purge },
@@ -336,11 +457,19 @@ export const expressionTools: readonly FluxerTool[] = [
   defineTool({
     name: 'stickers_get_metadata',
     category: 'stickers',
-    description: 'Fluxer-native: fetch metadata for a sticker by ID (`GET /stickers/{sticker_id}/metadata`).',
+    description:
+      'Fluxer-native: fetch metadata for a sticker by ID (`GET /stickers/{sticker_id}/metadata`).',
     inputSchema: { sticker_id: StickerId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const data = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.stickerMetadata(args.sticker_id));
+      const data = await ctx.rest.get<Record<string, unknown>>(
+        FluxerRoutes.stickerMetadata(args.sticker_id),
+      );
       return dualResult({ text: `Fetched metadata for sticker \`${args.sticker_id}\`.`, data });
     },
   }),
@@ -348,11 +477,19 @@ export const expressionTools: readonly FluxerTool[] = [
   defineTool({
     name: 'stickers_get_source',
     category: 'stickers',
-    description: 'Fluxer-native: look up the source guild of a sticker (`GET /stickers/{sticker_id}/source`).',
+    description:
+      'Fluxer-native: look up the source guild of a sticker (`GET /stickers/{sticker_id}/source`).',
     inputSchema: { sticker_id: StickerId },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
-      const data = await ctx.rest.get<Record<string, unknown>>(FluxerRoutes.stickerSource(args.sticker_id));
+      const data = await ctx.rest.get<Record<string, unknown>>(
+        FluxerRoutes.stickerSource(args.sticker_id),
+      );
       return dualResult({ text: `Fetched source guild for sticker \`${args.sticker_id}\`.`, data });
     },
   }),
@@ -367,13 +504,27 @@ export const expressionTools: readonly FluxerTool[] = [
       query: z.string().trim().min(1).max(64),
       limit: z.number().int().min(1).max(25).optional(),
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
     handler: async (args, ctx) => {
       const res = await fetch('https://emoji.gg/api/', { signal: ctx.signal });
       if (!res.ok) {
-        throw new ExternalServiceError('emoji.gg', `emoji.gg returned HTTP ${res.status}`, res.status);
+        throw new ExternalServiceError(
+          'emoji.gg',
+          `emoji.gg returned HTTP ${res.status}`,
+          res.status,
+        );
       }
-      const list = (await res.json()) as Array<{ id: number; title: string; image: string; category: number }>;
+      const list = (await res.json()) as Array<{
+        id: number;
+        title: string;
+        image: string;
+        category: number;
+      }>;
       const q = args.query.toLowerCase();
       const matches = list
         .filter((e) => e.title.toLowerCase().includes(q))
