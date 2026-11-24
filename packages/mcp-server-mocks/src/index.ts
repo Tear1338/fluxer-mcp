@@ -69,7 +69,12 @@ export function createFluxerHandlers(apiOrigin: string = FLUXER_MOCK_API_ORIGIN)
 
     http.get(`${v1}/experiments`, () =>
       HttpResponse.json({
-        assignments: [{ id: 'fluxer_forum_tags_v2', bucket: 1 }],
+        poll_interval_seconds: 300,
+        poll_jitter_percent: 15,
+        assignments: {
+          channel_threads: { active: true, config_version: 14 },
+          voice_p2p: { enabled: false, max_participants: 2 },
+        },
       }),
     ),
 

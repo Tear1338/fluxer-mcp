@@ -170,14 +170,19 @@ export const instanceAndApplicationTools: readonly FluxerTool[] = [
     },
     handler: async (_args, ctx) => {
       const res = await ctx.rest.get<unknown>(FluxerRoutes.experiments());
-      const experiments = Array.isArray(res)
-        ? res
-        : ((res as { assignments?: unknown[]; experiments?: unknown[] })?.assignments ??
-          (res as { experiments?: unknown[] })?.experiments ??
-          []);
+      const rawObj =
+        res && typeof res === 'object' && !Array.isArray(res)
+          ? (res as Record<string, unknown>)
+          : null;
+      const assignments = rawObj?.assignments ?? rawObj?.experiments ?? res;
+      const count = Array.isArray(assignments)
+        ? assignments.length
+        : assignments && typeof assignments === 'object'
+          ? Object.keys(assignments).length
+          : 0;
       return dualResult({
-        text: `Retrieved ${experiments.length} Fluxer experiment assignment(s).`,
-        data: { count: experiments.length, raw: res },
+        text: `Retrieved ${count} Fluxer experiment assignment(s).`,
+        data: { count, assignments, raw: res },
       });
     },
   }),
